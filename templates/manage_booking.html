@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Your Appointment — Maison De Beauté{% endblock %}
+
+{% block content %}
+<div style="background: var(--bg-sand); padding: 4rem 0 3rem 0; border-bottom: 1px solid var(--border-subtle);">
+  <div class="container text-center">
+    <span class="section-tag">Client Portal</span>
+    <h1 class="section-title">Manage Your Appointment</h1>
+    <p class="section-subtitle">
+      Check your reserved slot, review treatment details, or modify your booking with your unique reference code.
+    </p>
+  </div>
+</div>
+
+<section style="padding: 4rem 0 6rem 0;">
+  <div class="container">
+    
+    <!-- Search Form -->
+    <div style="max-width: 580px; margin: 0 auto 3rem auto; background: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 2.25rem; box-shadow: var(--shadow-sm);">
+      <h3 style="font-family: var(--font-serif); font-size: 1.4rem; margin-bottom: 0.5rem; text-align: center;">Look Up Your Reservation</h3>
+      <p style="font-size: 0.88rem; color: var(--text-muted); text-align: center; margin-bottom: 1.75rem;">
+        Enter your booking reference code (e.g. SLN-78210) and your email or phone number.
+      </p>
+
+      {% if error %}
+      <div style="background: #FCE8E8; color: #C03737; border-radius: var(--radius-sm); padding: 0.85rem 1.25rem; font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem;">
+        ⚠️ {{ error }}
+      </div>
+      {% endif %}
+
+      <form action="{{ url_for('manage_booking') }}" method="POST">
+        <div class="form-group">
+          <label for="booking_code">Booking Reference Code</label>
+          <input type="text" name="booking_code" id="booking_code" class="custom-input" placeholder="e.g. SLN-78210" required style="text-transform: uppercase;">
+        </div>
+
+        <div class="form-group">
+          <label for="contact">Email Address or Phone Number</label>
+          <input type="text" name="contact" id="contact" class="custom-input" placeholder="e.g. yourname@example.com or 555-234-5678" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1.25rem;">
+          Find Appointment ➔
+        </button>
+      </form>
+    </div>
+
+    <!-- Booking Details Result -->
+    {% if booking %}
+    <div class="confirmation-box" style="margin: 0 auto; max-width: 680px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
+        <div>
+          <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Reference</span>
+          <h3 style="font-family: monospace; font-size: 1.5rem; color: var(--gold-dark);">{{ booking.booking_code }}</h3>
+        </div>
+        <div>
+          <span class="status-badge status-{{ booking.status }}" style="font-size: 0.85rem; padding: 0.4rem 1rem;">
+            {{ booking.status }}
+          </span>
+        </div>
+      </div>
+
+      <table class="receipt-table">
+        <tbody>
+          <tr>
+            <td class="label">Client:</td>
+            <td class="value">{{ booking.customer_name }}</td>
+          </tr>
+          <tr>
+            <td class="label">Treatment:</td>
+            <td class="value">{{ booking.service_name }}</td>
+          </tr>
+          <tr>
+            <td class="label">Salon Specialist:</td>
+            <td class="value">{{ booking.stylist_name }}</td>
+          </tr>
+          <tr>
+            <td class="label">Date & Slot:</td>
+            <td class="value">{{ booking.appointment_date }} at {{ booking.appointment_time }}</td>
+          </tr>
+          <tr>
+            <td class="label">Total Price:</td>
+            <td class="value" style="color: var(--gold-dark);">${{ "%.2f"|format(booking.total_price) }}</td>
+          </tr>
+          {% if booking.notes %}
+          <tr>
+            <td class="label">Notes:</td>
+            <td class="value">{{ booking.notes }}</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+      {% if booking.status == 'confirmed' %}
+      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="{{ url_for('download_ics', booking_code=booking.booking_code) }}" class="btn btn-outline btn-sm">
+          📅 Export to Calendar
+        </a>
+        <button id="cancelAppointmentBtn" data-code="{{ booking.booking_code }}" class="btn btn-sm" style="background: #FCE8E8; color: #C03737; border: 1px solid #F5C6C6;">
+          Cancel Appointment
+        </button>
+      </div>
+      {% else %}
+      <div style="margin-top: 1.5rem;">
+        <a href="{{ url_for('book_page') }}" class="btn btn-primary">
+          Book a New Appointment →
+        </a>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

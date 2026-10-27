@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Before & After Transformations — Maison De Beauté{% endblock %}
+
+{% block content %}
+<div style="background: var(--bg-sand); padding: 4.5rem 0 3.5rem 0; border-bottom: 1px solid var(--border-subtle);">
+  <div class="container text-center">
+    <span class="section-tag">Transformation Gallery</span>
+    <h1 class="section-title">Before & After Artistry</h1>
+    <p class="section-subtitle" style="margin-bottom: 1.75rem; max-width: 680px; margin-left: auto; margin-right: auto;">
+      Experience authentic client transformations achieved through personalized clinical aesthetic therapies, bespoke color work, and precision artistry.
+    </p>
+
+    <!-- Category Filter Buttons -->
+    <div class="services-filter-bar" style="margin-top: 1.5rem;">
+      <button class="filter-btn transformations-filter-btn active" data-category="all">All Transformations</button>
+      {% for cat in categories %}
+        <button class="filter-btn transformations-filter-btn" data-category="{{ cat }}">{{ cat }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<section style="padding: 4.5rem 0 6rem 0;">
+  <div class="container">
+    <div class="transformation-grid" id="transformationsGrid">
+      {% for item in transformations %}
+      <div class="transformation-card" data-category="{{ item.category }}">
+        <div class="ba-media-container">
+          <!-- Side-by-Side Presentation (Placed directly before & after treatment) -->
+          <div class="ba-side-by-side-box" style="display: grid;">
+            <div class="ba-side-col ba-side-before">
+              <img src="{{ item.before_image }}" alt="{{ item.title }} - Before Treatment" loading="lazy">
+              <div class="ba-side-badge badge-before">BEFORE TREATMENT</div>
+            </div>
+            <div class="ba-side-divider-tag">➔</div>
+            <div class="ba-side-col ba-side-after">
+              <img src="{{ item.after_image }}" alt="{{ item.title }} - After Treatment" loading="lazy">
+              <div class="ba-side-badge badge-after">AFTER TREATMENT</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="transformation-details">
+          <div class="transformation-header">
+            <h2 class="transformation-title">{{ item.title }}</h2>
+          </div>
+          <div class="transformation-treatment">{{ item.treatment_name }} • Duration: {{ item.duration }}</div>
+          <p class="transformation-desc">{{ item.description }}</p>
+          <div class="transformation-quote">{{ item.client_feedback }}</div>
+
+          <div class="transformation-footer">
+            <div class="transformation-specialist">
+              Master Artisan: <strong>{{ item.stylist_name }}</strong>
+            </div>
+            <a href="{{ url_for('book_page', service_id=item.service_id, stylist_id=item.stylist_id) }}" class="btn btn-primary btn-sm">
+              Book This Result →
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/comparison.js') }}"></script>
+{% endblock %}

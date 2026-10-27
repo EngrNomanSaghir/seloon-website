@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Appointment Confirmed — Maison De Beauté{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="confirmation-box">
+    <div class="confirmation-badge-icon">✓</div>
+    
+    <span class="section-tag">Booking Confirmed</span>
+    <h1 class="heading" style="margin-bottom: 0.5rem;">
+      We Look Forward to Welcoming You!
+    </h1>
+    <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">
+      Your salon slot has been secured. A confirmation notice has been dispatched to <strong>{{ booking.customer_email }}</strong>.
+    </p>
+
+    <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);">
+      Your Appointment Reference Code
+    </div>
+    <div class="code-display">{{ booking.booking_code }}</div>
+
+    <table class="receipt-table">
+      <tbody>
+        <tr>
+          <td class="label">Client Name:</td>
+          <td class="value">{{ booking.customer_name }}</td>
+        </tr>
+        <tr>
+          <td class="label">Selected Treatment:</td>
+          <td class="value">{{ booking.service_name }}</td>
+        </tr>
+        <tr>
+          <td class="label">Salon Specialist:</td>
+          <td class="value">{{ booking.stylist_name }}</td>
+        </tr>
+        <tr>
+          <td class="label">Appointment Date:</td>
+          <td class="value">{{ booking.appointment_date }}</td>
+        </tr>
+        <tr>
+          <td class="label">Reserved Slot:</td>
+          <td class="value">{{ booking.appointment_time }}</td>
+        </tr>
+        <tr>
+          <td class="label">Total Amount:</td>
+          <td class="value" style="color: var(--gold-dark); font-size: 1.2rem;">${{ "%.2f"|format(booking.total_price) }} (Pay at Salon)</td>
+        </tr>
+        <tr>
+          <td class="label">Contact Phone:</td>
+          <td class="value">{{ booking.customer_phone }}</td>
+        </tr>
+        {% if booking.notes %}
+        <tr>
+          <td class="label">Special Notes:</td>
+          <td class="value" style="font-style: italic; color: #4A4D55;">"{{ booking.notes }}"</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <div style="background: var(--bg-sand); border-radius: var(--radius-sm); padding: 1.25rem; text-align: left; margin-bottom: 2rem;">
+      <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem;">📍 Salon Arrival Instructions</h4>
+      <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+        Please arrive 10 minutes prior to your appointment time at <strong>742 Fifth Avenue, Luxury Suite 400</strong>. Enjoy a complimentary matcha latte, organic herbal infusion, or artisan champagne while your specialist prepares your private suite.
+      </p>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+      <a href="{{ url_for('download_ics', booking_code=booking.booking_code) }}" class="btn btn-primary">
+        📅 Add to Calendar (.ics)
+      </a>
+      <button onclick="window.print()" class="btn btn-outline">
+        🖨 Print Confirmation
+      </button>
+      <a href="{{ url_for('home') }}" class="btn btn-dark">
+        Return to Home
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

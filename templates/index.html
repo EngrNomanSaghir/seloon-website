@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block title %}Maison De Beauté — Luxury Salon, Spa & Hair Artistry{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="container hero-grid">
+    <div class="hero-content">
+      <div class="hero-badge">
+        New York's Premier Boutique Salon & Spa
+      </div>
+      <h1 class="hero-title">
+        The Art of <span>Elegance</span> & Bespoke Transformation
+      </h1>
+      <p class="hero-description">
+        Experience tailored hair coloring, couture haircutting, medical-grade skin therapies, and executive grooming crafted by world-class specialists in an oasis of pure indulgence.
+      </p>
+
+      <div class="hero-cta-group">
+        <a href="{{ url_for('book_page') }}" class="btn btn-primary btn-slide-hover">
+          <span class="btn-text">Book Your Slot</span> <span class="btn-arrow">→</span>
+        </a>
+        <a href="{{ url_for('transformations_page') }}" class="btn btn-outline">Explore Transformations</a>
+      </div>
+
+      <div class="hero-features">
+        <div class="hero-feature-item">
+          <span class="hero-feature-number">12k+</span>
+          <span class="hero-feature-label">Clients Transformed</span>
+        </div>
+        <div class="hero-feature-item">
+          <span class="hero-feature-number">4.98★</span>
+          <span class="hero-feature-label">5-Star Reviews</span>
+        </div>
+        <div class="hero-feature-item">
+          <span class="hero-feature-number">15+</span>
+          <span class="hero-feature-label">Years of Mastery</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hero-image-card">
+        <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1000&auto=format&fit=crop&q=80" alt="Maison De Beauté Salon Interior">
+      </div>
+      <div class="hero-floating-badge">
+        <div class="hero-floating-icon">
+          <img src="{{ url_for('static', filename='images/lady_logo_round.png') }}" alt="Maison De Beauté Lady Sketch">
+        </div>
+        <div class="hero-floating-text">
+          <h4>Master Stylists on Duty</h4>
+          <p>Book online & choose your specialist</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Featured Services Section -->
+<section class="section-services">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-tag">Signature Offerings</span>
+      <h2 class="section-title">Curated Salon Treatments</h2>
+      <p class="section-subtitle">
+        From multidimensional balayage and precision haircuts to clinical Hydra-Glow facials and executive beard grooming.
+      </p>
+    </div>
+
+    <div class="services-grid">
+      {% for service in featured_services %}
+      <div class="service-card">
+        <div class="service-image-wrapper">
+          <img src="{{ service.image_url }}" alt="{{ service.name }}">
+          {% if service.badge %}
+            <span class="service-badge">{{ service.badge }}</span>
+          {% endif %}
+        </div>
+        <div class="service-content">
+          <span class="service-category-tag">{{ service.category }}</span>
+          <h3 class="service-title">{{ service.name }}</h3>
+          <p class="service-desc">{{ service.description }}</p>
+          <div class="service-meta">
+            <div>
+              <span class="service-price">${{ "%.2f"|format(service.price) }}</span>
+              <span class="service-duration">⏱ {{ service.duration_min }} mins</span>
+            </div>
+            <a href="{{ url_for('book_page', service_id=service.id) }}" class="btn btn-outline btn-sm">Book Treatment</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="text-center" style="margin-top: 3.5rem;">
+      <a href="{{ url_for('services_page') }}" class="btn btn-dark btn-slide-hover">
+        <span class="btn-text">View All Services & Menu</span> <span class="btn-arrow">➔</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive Before & After Transformations Section -->
+<section class="section-transformations">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-tag">Real Results</span>
+      <h2 class="section-title">Before & After Transformations</h2>
+      <p class="section-subtitle">
+        Explore real before & after treatment results achieved by our master artists and clinical aestheticians.
+      </p>
+    </div>
+
+    <div class="transformation-grid">
+      {% for item in transformations %}
+      <div class="transformation-card" data-category="{{ item.category }}">
+        <div class="ba-media-container">
+          <!-- Side-by-Side Presentation (Placed directly before & after treatment) -->
+          <div class="ba-side-by-side-box" style="display: grid;">
+            <div class="ba-side-col ba-side-before">
+              <img src="{{ item.before_image }}" alt="{{ item.title }} - Before Treatment" loading="lazy">
+              <div class="ba-side-badge badge-before">BEFORE TREATMENT</div>
+            </div>
+            <div class="ba-side-divider-tag">➔</div>
+            <div class="ba-side-col ba-side-after">
+              <img src="{{ item.after_image }}" alt="{{ item.title }} - After Treatment" loading="lazy">
+              <div class="ba-side-badge badge-after">AFTER TREATMENT</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="transformation-details">
+          <div class="transformation-header">
+            <h3 class="transformation-title">{{ item.title }}</h3>
+          </div>
+          <div class="transformation-treatment">{{ item.treatment_name }} ({{ item.duration }})</div>
+          <p class="transformation-desc">{{ item.description }}</p>
+          <div class="transformation-quote">{{ item.client_feedback }}</div>
+
+          <div class="transformation-footer">
+            <div class="transformation-specialist">
+              Artisan: <strong>{{ item.stylist_name }}</strong>
+            </div>
+            <a href="{{ url_for('book_page', service_id=item.service_id, stylist_id=item.stylist_id) }}" class="btn btn-primary btn-sm">
+              Book This Result →
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="text-center" style="margin-top: 3.5rem;">
+      <a href="{{ url_for('transformations_page') }}" class="btn btn-outline btn-slide-hover">
+        <span class="btn-text">Explore Full Transformation Gallery</span> <span class="btn-arrow">➔</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Salon Specialists / Team Section ("Seloon Person") -->
+<section class="section-team">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-tag">The Artistry Team</span>
+      <h2 class="section-title">Select Your Salon Specialist</h2>
+      <p class="section-subtitle">
+        Every member of our team is an internationally certified master of their craft, dedicated to an individualized luxury experience.
+      </p>
+    </div>
+
+    <div class="team-grid">
+      {% for stylist in stylists %}
+      <div class="stylist-card">
+        <div class="stylist-image-box">
+          <img src="{{ stylist.image_url }}" alt="{{ stylist.name }}">
+          <div class="stylist-rating-badge">
+            <span class="star">★</span> {{ stylist.rating }} ({{ stylist.reviews_count }})
+          </div>
+        </div>
+        <div class="stylist-body">
+          <h3 class="stylist-name">{{ stylist.name }}</h3>
+          <div class="stylist-title">{{ stylist.title }}</div>
+          <p class="stylist-bio">{{ stylist.bio }}</p>
+          
+          <div style="background: var(--bg-cream); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; margin-bottom: 0.85rem; font-size: 0.78rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+              <span style="font-weight: 600; color: var(--text-muted);">Shift:</span>
+              <span class="shift-badge" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">⏰ {{ stylist.shift_start }} – {{ stylist.shift_end }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; color: var(--text-muted);">Days:</span>
+              <span style="font-weight: 700; color: var(--text-dark);">🗓 {{ stylist.available_days }}</span>
+            </div>
+          </div>
+
+          <div class="stylist-specialties" style="margin-bottom: 1rem;">
+            {% for spec in stylist.specialties.split(',') %}
+              <span class="specialty-tag">{{ spec.strip() }}</span>
+            {% endfor %}
+          </div>
+
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="{{ url_for('team_page') }}" class="btn btn-outline btn-sm" style="flex: 1; text-align: center;">
+              👁 Availability
+            </a>
+            <a href="{{ url_for('book_page', stylist_id=stylist.id) }}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center;">
+              Book →
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="text-center" style="margin-top: 3.5rem;">
+      <a href="{{ url_for('team_page') }}" class="btn btn-dark btn-slide-hover">
+        <span class="btn-text">Meet All Specialists</span> <span class="btn-arrow">➔</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Reviews & Testimonials Section -->
+<section class="section-reviews">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-tag" style="background: rgba(232, 207, 130, 0.15); color: var(--gold-light);">Client Acclaim</span>
+      <h2 class="section-title">Stories of Pure Radiance</h2>
+      <p class="section-subtitle">
+        What our beloved clients say about their bespoke styling journeys at Maison De Beauté.
+      </p>
+    </div>
+
+    <div class="reviews-grid">
+      {% for r in reviews %}
+      <div class="review-card">
+        <div>
+          <div class="review-rating">
+            {% for _ in range(r.rating) %}★{% endfor %}
+          </div>
+          <p class="review-text">"{{ r.comment }}"</p>
+        </div>
+        <div class="review-client">
+          <img src="{{ r.avatar_url }}" alt="{{ r.customer_name }}" class="review-avatar">
+          <div class="review-info">
+            <h4>{{ r.customer_name }}</h4>
+            <p>{{ r.treatment_name }} with {{ r.stylist_name }}</p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Call To Action Banner -->
+<section style="background: rgba(250, 248, 245, 0.78); padding: 5rem 0;">
+  <div class="container">
+    <div style="background: var(--gold-gradient); border-radius: var(--radius-lg); padding: 4rem 2.5rem; text-align: center; color: #16140F; box-shadow: var(--shadow-gold);">
+      <h2 class="section-title" style="color: #16140F; margin-bottom: 1.5rem;">
+        Ready for Your Personalized Transformation?
+      </h2>
+      <p style="font-size: 16px; font-weight: 300; line-height: 24px; max-width: 600px; margin: 0 auto 2rem auto;">
+        Choose your favorite specialist, select your customized treatment, and secure your VIP appointment slot in less than 2 minutes.
+      </p>
+      <a href="{{ url_for('book_page') }}" class="btn btn-dark btn-slide-hover">
+        <span class="btn-text">Book Your Slot Today</span> <span class="btn-arrow">→</span>
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/comparison.js') }}"></script>
+{% endblock %}

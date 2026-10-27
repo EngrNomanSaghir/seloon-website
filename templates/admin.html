@@ -1,0 +1,1321 @@
+{% extends 'base.html' %}
+
+{% block title %}Salon Staff Portal & Appointments — Maison De Beauté{% endblock %}
+
+{% block content %}
+<div style="background: var(--bg-dark); color: #FFFFFF; padding: 3rem 0; border-bottom: 1px solid var(--border-dark);">
+  <div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <span class="section-tag" style="background: rgba(232, 207, 130, 0.15); color: var(--gold-light);">Salon Staff & Operations</span>
+        <h1 class="heading" style="color: #FFFFFF; margin-top: 0.2rem;">Salon Operations Dashboard</h1>
+      </div>
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button type="button" class="btn btn-dark btn-sm btn-slide-hover" onclick="switchAdminTab('manager')">
+          <span class="btn-text">👑 Manager & CEO Suite</span> <span class="btn-arrow">→</span>
+        </button>
+        <a href="{{ url_for('book_page') }}" class="btn btn-outline btn-sm" style="color: #FFFFFF; border-color: rgba(255,255,255,0.3);">
+          + Walk-in Booking
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="admin-section">
+  <div class="container">
+    
+    <!-- Metrics Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="label">Total Appointments</div>
+        <div class="val">{{ total_bookings }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Today's Bookings</div>
+        <div class="val">{{ today_bookings }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Estimated Revenue</div>
+        <div class="val" style="color: var(--gold-dark);">${{ "%.2f"|format(total_revenue) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">Total Workers / Active</div>
+        <div class="val">{{ active_stylists }} <span style="font-size: 1.1rem; color: var(--text-muted); font-weight: 500;">/ {{ stylists|length }}</span></div>
+      </div>
+    </div>
+
+    <!-- Admin Navigation Tabs -->
+    <div class="admin-tab-bar">
+      <button type="button" class="admin-tab-btn active" id="tabBtnAppointments" onclick="switchAdminTab('appointments')">
+        <span>📅</span> Appointments & Calendar <span class="tab-count">{{ total_bookings }}</span>
+      </button>
+      <button type="button" class="admin-tab-btn admin-tab-btn-manager btn-slide-hover" id="tabBtnManager" onclick="switchAdminTab('manager')">
+        <span>👑</span> <span class="btn-text">Manager & CEO Suite</span> <span id="managerTabLockBadge" class="tab-lock-badge">{% if is_manager %}🔓 Unlocked{% else %}🔒 Password Required{% endif %}</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: APPOINTMENTS VIEW -->
+    <div id="tabContentAppointments">
+      <!-- Filters -->
+      <div style="background: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem 1.75rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+        <form method="GET" action="{{ url_for('admin_dashboard') }}" style="display: flex; gap: 1.25rem; align-items: flex-end; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 200px;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Filter by Date:</label>
+            <input type="date" name="date" class="custom-input" value="{{ filter_date }}">
+          </div>
+
+          <div style="flex: 1; min-width: 200px;">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Filter by Status:</label>
+            <select name="status" class="custom-input">
+              <option value="">All Statuses</option>
+              <option value="confirmed" {% if filter_status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+              <option value="completed" {% if filter_status == 'completed' %}selected{% endif %}>Completed</option>
+              <option value="cancelled" {% if filter_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+          </div>
+
+          <div>
+            <button type="submit" class="btn btn-dark btn-sm">Apply Filters</button>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline btn-sm">Reset</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- Bookings Table -->
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ref Code</th>
+              <th>Date & Time</th>
+              <th>Client Info</th>
+              <th>Treatment</th>
+              <th>Specialist</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Update Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if bookings %}
+              {% for b in bookings %}
+              <tr>
+                <td>
+                  <strong style="font-family: monospace; font-size: 0.95rem; color: var(--gold-dark);">{{ b.booking_code }}</strong>
+                </td>
+                <td>
+                  <strong>{{ b.appointment_date }}</strong><br>
+                  <small class="text-muted">{{ b.appointment_time }}</small>
+                </td>
+                <td>
+                  <strong>{{ b.customer_name }}</strong><br>
+                  <small class="text-muted">{{ b.customer_email }} • {{ b.customer_phone }}</small>
+                  {% if b.notes %}
+                    <br><small style="color: #666; font-style: italic;">Note: {{ b.notes }}</small>
+                  {% endif %}
+                </td>
+                <td>{{ b.service_name }}</td>
+                <td><strong>{{ b.stylist_name }}</strong></td>
+                <td style="font-weight: 700; color: var(--gold-dark);">${{ "%.2f"|format(b.total_price) }}</td>
+                <td>
+                  <span id="status-badge-{{ b.id }}" class="status-badge status-{{ b.status }}">
+                    {{ b.status }}
+                  </span>
+                </td>
+                <td>
+                  <select class="custom-input admin-status-select" data-id="{{ b.id }}" style="padding: 0.4rem 0.6rem; font-size: 0.82rem; width: auto;">
+                    <option value="confirmed" {% if b.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                    <option value="completed" {% if b.status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if b.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                  </select>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                  No appointments found matching your filter criteria.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: MANAGER & CEO EXECUTIVE SUITE (PASSWORD PROTECTED) -->
+    <div id="tabContentManager" style="display: none;">
+      
+      <!-- Password Protection Gate (Shown when locked) -->
+      <div id="managerAuthGate" class="manager-lock-screen" style="{% if is_manager %}display: none;{% endif %}">
+        <div class="manager-lock-card">
+          <div class="manager-lock-icon">🔒</div>
+          <span class="section-tag" style="margin-bottom: 0.75rem;">Executive Security</span>
+          <h2 style="font-family: var(--font-heading); font-size: 26px; font-weight: 400; margin-bottom: 0.6rem; color: var(--text-dark);">
+            Manager & CEO Suite
+          </h2>
+          <p style="color: var(--text-muted); font-size: 14px; line-height: 22px; margin-bottom: 1.75rem;">
+            This executive section is restricted. Enter your manager passcode to adjust service pricing, edit treatment details, and add or remove staff members.
+          </p>
+          
+          <form id="managerLoginForm" onsubmit="submitManagerPassword(event)" style="max-width: 360px; margin: 0 auto;">
+            <div style="margin-bottom: 1.25rem;">
+              <input type="password" id="managerPassInput" class="custom-input text-center" placeholder="Enter Manager Passcode..." required style="font-size: 15px; letter-spacing: 2px;">
+            </div>
+            <div id="managerAuthError" style="color: #C03737; font-size: 13px; font-weight: 600; margin-bottom: 1rem; display: none;"></div>
+            <button type="submit" id="btnUnlockManager" class="btn btn-dark btn-block btn-slide-hover">
+              <span class="btn-text">Unlock Executive Suite</span> <span class="btn-arrow">→</span>
+            </button>
+            <div style="margin-top: 1.25rem; font-size: 12px; color: var(--text-muted);">
+              Default Passcode: <code style="background: rgba(197, 155, 39, 0.15); padding: 3px 8px; border-radius: 4px; color: var(--gold-dark); font-weight: 600;">ceo2026</code>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Unlocked Executive Workspace (Shown when authenticated) -->
+      <div id="managerWorkspace" style="{% if not is_manager %}display: none;{% endif %}">
+        
+        <!-- Executive Banner -->
+        <div class="manager-banner">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+              <span style="font-size: 1.3rem;">👑</span>
+              <strong style="font-size: 1.15rem; color: #FFFFFF;">Executive Manager & CEO Suite Active</strong>
+              <span class="status-badge status-confirmed" style="font-size: 11px; padding: 2px 8px;">Full Privileges</span>
+            </div>
+            <div style="color: #A3A8B5; font-size: 13px; margin-top: 0.25rem;">
+              Authorized to edit services catalog, treatment pricing, durations & add or remove salon personnel.
+            </div>
+          </div>
+          <div>
+            <button type="button" class="btn btn-outline btn-sm" style="color: #FFFFFF; border-color: rgba(255,255,255,0.4);" onclick="lockManagerSuite()">
+              🔒 Lock Suite & Sign Out
+            </button>
+          </div>
+        </div>
+
+        <!-- Manager Sub-Navigation -->
+        <div class="manager-sub-nav">
+          <button type="button" class="manager-sub-btn active" id="subBtnServices" onclick="switchManagerSubTab('services')">
+            <span>✨</span> Salon Services & Pricing Catalog ({{ services|length }})
+          </button>
+          <button type="button" class="manager-sub-btn" id="subBtnWorkers" onclick="switchManagerSubTab('workers')">
+            <span>👥</span> Salon Staff & Personnel Roster ({{ stylists|length }})
+          </button>
+        </div>
+
+        <!-- SUB-TAB 1: SERVICES MANAGEMENT -->
+        <div id="managerSubServices">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h2 style="font-family: var(--font-heading); font-size: 24px; font-weight: 400; color: var(--text-dark); margin: 0;">
+                Salon Treatment Services & Pricing
+              </h2>
+              <p style="color: var(--text-muted); font-size: 14px; margin-top: 0.35rem;">
+                Add new treatments, modify pricing, change durations, customize descriptions, and toggle homepage spotlights.
+              </p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openAddServiceModal()">
+              + Add New Treatment Service
+            </button>
+          </div>
+
+          <!-- Category Filter Bar for Manager -->
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;" id="managerServiceFilters">
+            <button type="button" class="filter-btn active" onclick="filterManagerServices('all', this)">All Treatments</button>
+            {% for cat in service_categories %}
+              <button type="button" class="filter-btn" onclick="filterManagerServices('{{ cat }}', this)">{{ cat }}</button>
+            {% endfor %}
+          </div>
+
+          <!-- Services Grid -->
+          <div class="service-mgmt-grid" id="managerServicesGrid">
+            {% for s in services %}
+            <div class="service-mgmt-card" data-category="{{ s.category }}" id="service-card-{{ s.id }}">
+              <div class="service-mgmt-image">
+                <img src="{{ s.image_url }}" alt="{{ s.name }}" loading="lazy">
+                {% if s.badge %}
+                  <span class="specialty-tag" style="position: absolute; top: 12px; left: 12px; background: rgba(18, 19, 22, 0.85); color: var(--gold-light); border: 1px solid rgba(232, 207, 130, 0.3); font-size: 11px;">
+                    {{ s.badge }}
+                  </span>
+                {% endif %}
+                {% if s.is_popular == 1 %}
+                  <span class="status-badge status-confirmed" style="position: absolute; top: 12px; right: 12px; font-size: 10px;">
+                    ★ Featured
+                  </span>
+                {% endif %}
+              </div>
+              <div class="service-mgmt-body">
+                <div class="service-mgmt-category">{{ s.category }}</div>
+                <div class="service-mgmt-title">{{ s.name }}</div>
+                <div class="service-mgmt-desc">{{ s.description }}</div>
+                
+                <div class="service-mgmt-meta">
+                  <div class="service-mgmt-price">${{ "%.2f"|format(s.price) }}</div>
+                  <div class="service-mgmt-duration">⏱ {{ s.duration_min }} mins</div>
+                </div>
+
+                <div class="service-mgmt-actions">
+                  <button type="button" class="btn btn-outline btn-sm" style="flex: 1;" onclick='openEditServiceModal({{ s|tojson }})'>
+                    ✏ Edit Details
+                  </button>
+                  <button type="button" class="btn btn-sm" style="background: #FFF0F0; color: #C03737; border: 1px solid #FFD0D0;" onclick="deleteService({{ s.id }}, '{{ s.name }}')">
+                    🗑 Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- SUB-TAB 2: WORKERS MANAGEMENT (ADD / REMOVE PEOPLE) -->
+        <div id="managerSubWorkers" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h2 style="font-family: var(--font-heading); font-size: 24px; font-weight: 400; color: var(--text-dark); margin: 0;">
+                Salon Staff & Personnel Roster
+              </h2>
+              <p style="color: var(--text-muted); font-size: 14px; margin-top: 0.25rem;">
+                Add new salon artisans, adjust daily working shifts, configure work days, and remove personnel.
+              </p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openAddWorkerModal()">
+              + Add New Worker & Set Shift
+            </button>
+          </div>
+
+          <!-- Worker Management Cards -->
+          <div class="worker-mgmt-grid" id="workerCardsContainer">
+            {% for worker in stylists %}
+            <div class="worker-card" id="worker-card-{{ worker.id }}">
+              <div class="worker-header">
+                <img src="{{ worker.image_url }}" alt="{{ worker.name }}" class="worker-avatar">
+                <div class="worker-identity">
+                  <h3>{{ worker.name }}</h3>
+                  <div class="worker-title">{{ worker.title }}</div>
+                  <div class="worker-meta">
+                    <span>★ {{ worker.rating }} ({{ worker.reviews_count }})</span> • 
+                    <span>{{ worker.experience_years }} yrs master exp</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="worker-shift-box">
+                <div class="worker-shift-row">
+                  <span style="font-weight: 600; color: var(--text-muted);">Working Shift:</span>
+                  <span class="shift-badge">⏰ {{ worker.shift_start or '09:00 AM' }} – {{ worker.shift_end or '07:00 PM' }}</span>
+                </div>
+                <div class="worker-shift-row" style="margin-top: 0.35rem;">
+                  <span style="font-weight: 600; color: var(--text-muted);">Shift Schedule:</span>
+                  <span style="font-weight: 700; color: var(--gold-dark); font-size: 0.8rem;">{{ worker.shift_type or 'Full Day' }}</span>
+                </div>
+                <div class="worker-shift-row" style="margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px dashed var(--border-subtle);">
+                  <span style="font-weight: 600; color: var(--text-muted);">Scheduled Days:</span>
+                  <span class="days-list-badge">🗓 {{ worker.available_days }}</span>
+                </div>
+                <div class="worker-shift-row" style="margin-top: 0.35rem;">
+                  <span style="font-weight: 600; color: var(--text-muted);">Status:</span>
+                  <span id="worker-status-badge-{{ worker.id }}" class="status-badge {% if worker.is_active == 1 %}status-confirmed{% else %}status-cancelled{% endif %}">
+                    {% if worker.is_active == 1 %}Active on Duty{% else %}Inactive / Off{% endif %}
+                  </span>
+                </div>
+              </div>
+
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 700; text-transform: uppercase;">
+                Specialties:
+              </div>
+              <div class="stylist-specialties" style="margin-bottom: 1rem;">
+                {% for sp in worker.specialties.split(',') %}
+                  <span class="specialty-tag" style="font-size: 0.7rem; padding: 0.2rem 0.6rem;">{{ sp.strip() }}</span>
+                {% endfor %}
+              </div>
+
+              <div class="worker-actions">
+                <button type="button" class="btn btn-outline btn-sm" style="flex: 1;" onclick='openEditWorkerModal({{ worker|tojson }})'>
+                  ✏ Edit Shift & Info
+                </button>
+                <button type="button" class="btn btn-dark btn-sm" style="flex: 1;" onclick="openWorkerScheduleModal({{ worker.id }}, '{{ worker.name }}')">
+                  🗓 Check Slots
+                </button>
+                <button type="button" class="btn btn-sm" style="background: #EFEFEF; color: #333;" onclick="toggleWorkerStatus({{ worker.id }})">
+                  {% if worker.is_active == 1 %}Pause{% else %}Activate{% endif %}
+                </button>
+                <button type="button" class="btn btn-sm" style="background: #FFF0F0; color: #C03737;" onclick="deleteWorker({{ worker.id }}, '{{ worker.name }}')">
+                  🗑 Remove
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========================================================================
+     MODAL: ADD NEW WORKER & SET SHIFT
+     ========================================================================= -->
+<div class="salon-modal-backdrop" id="addWorkerModal">
+  <div class="salon-modal-dialog">
+    <div class="salon-modal-header">
+      <h3>Add New Worker & Set Shifts</h3>
+      <button type="button" class="salon-modal-close" onclick="closeModal('addWorkerModal')">&times;</button>
+    </div>
+    <form id="addWorkerForm" onsubmit="submitAddWorker(event)">
+      <div class="salon-modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" name="name" class="custom-input" placeholder="e.g. Julian Carter" required>
+          </div>
+          <div class="form-group">
+            <label>Professional Title *</label>
+            <input type="text" name="title" class="custom-input" placeholder="e.g. Senior Colorist & Stylist" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Experience (Years)</label>
+            <input type="number" name="experience_years" class="custom-input" value="5" min="1" max="40">
+          </div>
+          <div class="form-group">
+            <label>Initial Customer Rating</label>
+            <input type="number" step="0.01" name="rating" class="custom-input" value="4.95" min="3.0" max="5.0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Profile Picture URL</label>
+          <input type="url" name="image_url" class="custom-input" placeholder="https://images.unsplash.com/photo-...">
+          <small class="text-muted" style="font-size: 0.75rem;">Leave empty to use high-quality default portrait.</small>
+        </div>
+
+        <div class="form-group">
+          <label>Specialties (comma-separated)</label>
+          <input type="text" name="specialties" class="custom-input" placeholder="e.g. Balayage, Razor Cut, Gloss Therapy" required>
+        </div>
+
+        <div class="form-group">
+          <label>Worker Bio / Philosophy</label>
+          <textarea name="bio" class="custom-input" rows="2" placeholder="Brief background of artistic techniques and experience..."></textarea>
+        </div>
+
+        <!-- Shift Configuration -->
+        <div style="background: var(--bg-sand); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-top: 1.25rem;">
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--gold-dark);">⏰ Working Shift Schedule Configuration</h4>
+          
+          <div class="form-group">
+            <label>Shift Template Preset:</label>
+            <select id="addShiftPreset" class="custom-input" onchange="applyShiftPreset('add')">
+              <option value="full">Full Day Shift (09:00 AM – 07:00 PM)</option>
+              <option value="morning">Morning Shift (09:00 AM – 02:30 PM)</option>
+              <option value="afternoon">Afternoon & Evening (01:00 PM – 07:00 PM)</option>
+              <option value="midday">Midday Shift (11:00 AM – 05:00 PM)</option>
+              <option value="custom">Custom Shift Hours...</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Shift Start Time</label>
+              <input type="text" id="addShiftStart" name="shift_start" class="custom-input" value="09:00 AM" required>
+            </div>
+            <div class="form-group">
+              <label>Shift End Time</label>
+              <input type="text" id="addShiftEnd" name="shift_end" class="custom-input" value="07:00 PM" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Shift Label / Type Description</label>
+            <input type="text" id="addShiftType" name="shift_type" class="custom-input" value="Full Day Shift" placeholder="e.g. Morning Shift, Full Day">
+          </div>
+
+          <div class="form-group" style="margin-top: 0.75rem;">
+            <label style="display: block; margin-bottom: 0.35rem;">Scheduled Work Days:</label>
+            <div class="day-checkbox-grid" id="addDaysGrid">
+              <label class="day-checkbox-label checked"><input type="checkbox" name="days" value="Mon" checked> Mon</label>
+              <label class="day-checkbox-label checked"><input type="checkbox" name="days" value="Tue" checked> Tue</label>
+              <label class="day-checkbox-label checked"><input type="checkbox" name="days" value="Wed" checked> Wed</label>
+              <label class="day-checkbox-label checked"><input type="checkbox" name="days" value="Thu" checked> Thu</label>
+              <label class="day-checkbox-label checked"><input type="checkbox" name="days" value="Fri" checked> Fri</label>
+              <label class="day-checkbox-label checked"><input type="checkbox" name="days" value="Sat" checked> Sat</label>
+              <label class="day-checkbox-label"><input type="checkbox" name="days" value="Sun"> Sun</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="salon-modal-footer">
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('addWorkerModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Save Worker & Set Shift →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- =========================================================================
+     MODAL: EDIT WORKER & SHIFT
+     ========================================================================= -->
+<div class="salon-modal-backdrop" id="editWorkerModal">
+  <div class="salon-modal-dialog">
+    <div class="salon-modal-header">
+      <h3>Edit Worker & Shift Schedule</h3>
+      <button type="button" class="salon-modal-close" onclick="closeModal('editWorkerModal')">&times;</button>
+    </div>
+    <form id="editWorkerForm" onsubmit="submitEditWorker(event)">
+      <input type="hidden" id="editWorkerId" name="id">
+      <div class="salon-modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" id="editWorkerName" name="name" class="custom-input" required>
+          </div>
+          <div class="form-group">
+            <label>Professional Title *</label>
+            <input type="text" id="editWorkerTitle" name="title" class="custom-input" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Experience (Years)</label>
+            <input type="number" id="editWorkerExp" name="experience_years" class="custom-input" min="1" max="40">
+          </div>
+          <div class="form-group">
+            <label>Customer Rating</label>
+            <input type="number" step="0.01" id="editWorkerRating" name="rating" class="custom-input" min="3.0" max="5.0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Profile Picture URL</label>
+          <input type="url" id="editWorkerImage" name="image_url" class="custom-input">
+        </div>
+
+        <div class="form-group">
+          <label>Specialties (comma-separated)</label>
+          <input type="text" id="editWorkerSpecialties" name="specialties" class="custom-input" required>
+        </div>
+
+        <div class="form-group">
+          <label>Worker Bio / Philosophy</label>
+          <textarea id="editWorkerBio" name="bio" class="custom-input" rows="2"></textarea>
+        </div>
+
+        <!-- Shift Settings -->
+        <div style="background: var(--bg-sand); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-top: 1.25rem;">
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--gold-dark);">⏰ Manage Worker Shift & Working Hours</h4>
+          
+          <div class="form-group">
+            <label>Shift Template Preset:</label>
+            <select id="editShiftPreset" class="custom-input" onchange="applyShiftPreset('edit')">
+              <option value="custom">Keep Custom Shift Hours</option>
+              <option value="full">Full Day Shift (09:00 AM – 07:00 PM)</option>
+              <option value="morning">Morning Shift (09:00 AM – 02:30 PM)</option>
+              <option value="afternoon">Afternoon & Evening (01:00 PM – 07:00 PM)</option>
+              <option value="midday">Midday Shift (11:00 AM – 05:00 PM)</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Shift Start Time</label>
+              <input type="text" id="editShiftStart" name="shift_start" class="custom-input" required>
+            </div>
+            <div class="form-group">
+              <label>Shift End Time</label>
+              <input type="text" id="editShiftEnd" name="shift_end" class="custom-input" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Shift Label / Type Description</label>
+            <input type="text" id="editShiftType" name="shift_type" class="custom-input">
+          </div>
+
+          <div class="form-group" style="margin-top: 0.75rem;">
+            <label style="display: block; margin-bottom: 0.35rem;">Scheduled Work Days:</label>
+            <div class="day-checkbox-grid" id="editDaysGrid">
+              <label class="day-checkbox-label"><input type="checkbox" name="edit_days" value="Mon"> Mon</label>
+              <label class="day-checkbox-label"><input type="checkbox" name="edit_days" value="Tue"> Tue</label>
+              <label class="day-checkbox-label"><input type="checkbox" name="edit_days" value="Wed"> Wed</label>
+              <label class="day-checkbox-label"><input type="checkbox" name="edit_days" value="Thu"> Thu</label>
+              <label class="day-checkbox-label"><input type="checkbox" name="edit_days" value="Fri"> Fri</label>
+              <label class="day-checkbox-label"><input type="checkbox" name="edit_days" value="Sat"> Sat</label>
+              <label class="day-checkbox-label"><input type="checkbox" name="edit_days" value="Sun"> Sun</label>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 1rem;">
+            <label style="font-weight: 600;">Status:</label>
+            <select id="editWorkerActive" name="is_active" class="custom-input">
+              <option value="1">Active on Duty</option>
+              <option value="0">Inactive / On Leave</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="salon-modal-footer">
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('editWorkerModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Update Worker & Shifts →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- =========================================================================
+     MODAL: WORKER LIVE SCHEDULE & AVAILABILITY VIEWER
+     ========================================================================= -->
+<div class="salon-modal-backdrop" id="workerScheduleModal">
+  <div class="salon-modal-dialog">
+    <div class="salon-modal-header">
+      <h3 id="scheduleModalTitle">Specialist Live Schedule</h3>
+      <button type="button" class="salon-modal-close" onclick="closeModal('workerScheduleModal')">&times;</button>
+    </div>
+    <div class="salon-modal-body">
+      <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem;">
+        <div style="flex: 1;">
+          <label style="font-size: 0.85rem; font-weight: 600;">Check Date:</label>
+          <input type="date" id="scheduleModalDate" class="custom-input" onchange="loadModalSchedule()">
+        </div>
+        <button type="button" class="btn btn-dark btn-sm" onclick="loadModalSchedule()">Refresh</button>
+      </div>
+
+      <div id="scheduleModalDetails" style="background: var(--bg-cream); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-bottom: 1.25rem;">
+        <!-- Populated via JS -->
+      </div>
+
+      <h4 style="font-size: 0.9rem; margin-bottom: 0.75rem;">Time Slots for this Shift:</h4>
+      <div class="avail-slot-grid" id="scheduleModalSlots">
+        <!-- Populated via JS -->
+      </div>
+    </div>
+    <div class="salon-modal-footer">
+      <button type="button" class="btn btn-dark btn-sm" onclick="closeModal('workerScheduleModal')">Close</button>
+    </div>
+  </div>
+</div>
+<!-- =========================================================================
+     MODAL: ADD NEW TREATMENT SERVICE
+     ========================================================================= -->
+<div class="salon-modal-backdrop" id="addServiceModal">
+  <div class="salon-modal-dialog">
+    <div class="salon-modal-header">
+      <h3 style="font-family: var(--font-heading); font-weight: 400; font-size: 20px;">Add New Treatment Service</h3>
+      <button type="button" class="salon-modal-close" onclick="closeModal('addServiceModal')">&times;</button>
+    </div>
+    <form id="addServiceForm" onsubmit="submitAddService(event)">
+      <div class="salon-modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Service / Treatment Name *</label>
+            <input type="text" name="name" class="custom-input" placeholder="e.g. Royal Platinum Gloss & Toner" required>
+          </div>
+          <div class="form-group">
+            <label>Treatment Category *</label>
+            <select name="category_select" id="addServiceCatSelect" class="custom-input" onchange="toggleCustomCategory('add')">
+              {% for cat in service_categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+              {% endfor %}
+              <option value="__custom__">+ Enter New Category...</option>
+            </select>
+            <input type="text" name="category_custom" id="addServiceCatCustom" class="custom-input" placeholder="Type new category..." style="display: none; margin-top: 0.5rem;">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price ($ USD) *</label>
+            <input type="number" step="0.01" name="price" class="custom-input" placeholder="e.g. 120.00" required>
+          </div>
+          <div class="form-group">
+            <label>Duration (Minutes) *</label>
+            <input type="number" step="5" name="duration_min" class="custom-input" value="60" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Badge Highlight (Optional)</label>
+          <input type="text" name="badge" class="custom-input" placeholder="e.g. Most Popular, Signature, Trending, New, Client Favorite">
+        </div>
+
+        <div class="form-group">
+          <label>Photo Image URL</label>
+          <input type="url" name="image_url" id="addServiceImgInput" class="custom-input" placeholder="https://images.unsplash.com/..." value="https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&auto=format&fit=crop&q=80">
+          <small class="text-muted" style="font-size: 11px;">Select a quick photo preset or paste your own link:</small>
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.35rem;">
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('add', 'hair')">💇 Hair</button>
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('add', 'facial')">✨ Facial</button>
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('add', 'nails')">💅 Nails</button>
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('add', 'barber')">🧔 Barber</button>
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('add', 'makeup')">💄 Makeup</button>
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('add', 'spa')">🌿 Spa</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Detailed Treatment Description *</label>
+          <textarea name="description" rows="3" class="custom-input" placeholder="Explain the luxury treatment steps, benefits, products used, and expected client outcome..." required></textarea>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.6rem; margin-top: 0.5rem;">
+          <input type="checkbox" name="is_popular" id="addServiceIsPopular" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+          <label for="addServiceIsPopular" style="margin: 0; cursor: pointer; font-weight: 500; font-size: 13px;">
+            Feature this service on Homepage & Booking highlights
+          </label>
+        </div>
+      </div>
+      <div class="salon-modal-footer">
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('addServiceModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Add Service to Catalog →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- =========================================================================
+     MODAL: EDIT SERVICE DETAILS & PRICING
+     ========================================================================= -->
+<div class="salon-modal-backdrop" id="editServiceModal">
+  <div class="salon-modal-dialog">
+    <div class="salon-modal-header">
+      <h3 style="font-family: var(--font-heading); font-weight: 400; font-size: 20px;">Edit Treatment Service & Pricing</h3>
+      <button type="button" class="salon-modal-close" onclick="closeModal('editServiceModal')">&times;</button>
+    </div>
+    <form id="editServiceForm" onsubmit="submitEditService(event)">
+      <input type="hidden" name="id" id="editServiceId">
+      <div class="salon-modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Service / Treatment Name *</label>
+            <input type="text" name="name" id="editServiceName" class="custom-input" required>
+          </div>
+          <div class="form-group">
+            <label>Treatment Category *</label>
+            <select name="category_select" id="editServiceCatSelect" class="custom-input" onchange="toggleCustomCategory('edit')">
+              {% for cat in service_categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+              {% endfor %}
+              <option value="__custom__">+ Enter New Category...</option>
+            </select>
+            <input type="text" name="category_custom" id="editServiceCatCustom" class="custom-input" placeholder="Type new category..." style="display: none; margin-top: 0.5rem;">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price ($ USD) *</label>
+            <input type="number" step="0.01" name="price" id="editServicePrice" class="custom-input" required>
+          </div>
+          <div class="form-group">
+            <label>Duration (Minutes) *</label>
+            <input type="number" step="5" name="duration_min" id="editServiceDuration" class="custom-input" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Badge Highlight (Optional)</label>
+          <input type="text" name="badge" id="editServiceBadge" class="custom-input" placeholder="e.g. Most Popular, Signature, Trending, New">
+        </div>
+
+        <div class="form-group">
+          <label>Photo Image URL</label>
+          <input type="url" name="image_url" id="editServiceImgInput" class="custom-input" required>
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.35rem;">
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('edit', 'hair')">💇 Hair</button>
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('edit', 'facial')">✨ Facial</button>
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('edit', 'nails')">💅 Nails</button>
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('edit', 'barber')">🧔 Barber</button>
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('edit', 'makeup')">💄 Makeup</button>
+            <button type="button" class="btn btn-outline btn-sm" style="padding: 0 0.8rem; min-height: 34px; line-height: 34px; font-size: 11px;" onclick="setServiceImgPreset('edit', 'spa')">🌿 Spa</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Detailed Treatment Description *</label>
+          <textarea name="description" id="editServiceDesc" rows="3" class="custom-input" required></textarea>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.6rem; margin-top: 0.5rem;">
+          <input type="checkbox" name="is_popular" id="editServiceIsPopular" value="1" style="width: 18px; height: 18px; cursor: pointer;">
+          <label for="editServiceIsPopular" style="margin: 0; cursor: pointer; font-weight: 500; font-size: 13px;">
+            Feature this service on Homepage & Booking highlights
+          </label>
+        </div>
+      </div>
+      <div class="salon-modal-footer">
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('editServiceModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Update Service Details →</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// State Management
+let isManagerUnlocked = {{ 'true' if is_manager else 'false' }};
+let currentAdminTab = 'appointments';
+let currentManagerSubTab = 'services';
+
+// Check URL Params on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetTab = urlParams.get('tab');
+  if (targetTab === 'manager' || targetTab === 'workers' || targetTab === 'services') {
+    switchAdminTab('manager');
+    if (targetTab === 'workers') {
+      switchManagerSubTab('workers');
+    }
+  }
+});
+
+// Top-Level Admin Tab Switching
+function switchAdminTab(tabName) {
+  currentAdminTab = tabName;
+  const btnApp = document.getElementById('tabBtnAppointments');
+  const btnMgr = document.getElementById('tabBtnManager');
+  const contentApp = document.getElementById('tabContentAppointments');
+  const contentMgr = document.getElementById('tabContentManager');
+
+  if (tabName === 'manager') {
+    btnMgr.classList.add('active');
+    btnApp.classList.remove('active');
+    contentMgr.style.display = 'block';
+    contentApp.style.display = 'none';
+
+    // Check authorization state
+    const gateEl = document.getElementById('managerAuthGate');
+    const wsEl = document.getElementById('managerWorkspace');
+    if (isManagerUnlocked) {
+      gateEl.style.display = 'none';
+      wsEl.style.display = 'block';
+    } else {
+      gateEl.style.display = 'flex';
+      wsEl.style.display = 'none';
+      setTimeout(() => {
+        const passInp = document.getElementById('managerPassInput');
+        if (passInp) passInp.focus();
+      }, 100);
+    }
+  } else {
+    btnApp.classList.add('active');
+    btnMgr.classList.remove('active');
+    contentApp.style.display = 'block';
+    contentMgr.style.display = 'none';
+  }
+}
+
+// Manager Sub-Navigation Switching
+function switchManagerSubTab(subTabName) {
+  currentManagerSubTab = subTabName;
+  const btnServices = document.getElementById('subBtnServices');
+  const btnWorkers = document.getElementById('subBtnWorkers');
+  const subServices = document.getElementById('managerSubServices');
+  const subWorkers = document.getElementById('managerSubWorkers');
+
+  if (subTabName === 'workers') {
+    btnWorkers.classList.add('active');
+    btnServices.classList.remove('active');
+    subWorkers.style.display = 'block';
+    subServices.style.display = 'none';
+  } else {
+    btnServices.classList.add('active');
+    btnWorkers.classList.remove('active');
+    subServices.style.display = 'block';
+    subWorkers.style.display = 'none';
+  }
+}
+
+// Manager Authentication Submit
+async function submitManagerPassword(e) {
+  e.preventDefault();
+  const inputEl = document.getElementById('managerPassInput');
+  const errEl = document.getElementById('managerAuthError');
+  const btnEl = document.getElementById('btnUnlockManager');
+  const pass = inputEl.value.trim();
+
+  errEl.style.display = 'none';
+  btnEl.disabled = true;
+  btnEl.textContent = 'Verifying Passcode...';
+
+  try {
+    const res = await fetch('/api/manager/verify-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pass })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      isManagerUnlocked = true;
+      document.getElementById('managerTabLockBadge').innerHTML = '🔓 Unlocked';
+      document.getElementById('managerAuthGate').style.display = 'none';
+      document.getElementById('managerWorkspace').style.display = 'block';
+      inputEl.value = '';
+    } else {
+      errEl.textContent = data.message || 'Invalid passcode.';
+      errEl.style.display = 'block';
+      inputEl.select();
+    }
+  } catch (err) {
+    errEl.textContent = 'Connection error. Please try again.';
+    errEl.style.display = 'block';
+  } finally {
+    btnEl.disabled = false;
+    btnEl.textContent = 'Unlock Executive Suite →';
+  }
+}
+
+// Lock Manager Suite
+async function lockManagerSuite() {
+  try {
+    await fetch('/api/manager/logout', { method: 'POST' });
+  } catch (err) {}
+  isManagerUnlocked = false;
+  document.getElementById('managerTabLockBadge').innerHTML = '🔒 Password Required';
+  document.getElementById('managerAuthGate').style.display = 'flex';
+  document.getElementById('managerWorkspace').style.display = 'none';
+}
+
+// Category Filter for Services
+function filterManagerServices(cat, btn) {
+  const container = document.getElementById('managerServiceFilters');
+  container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const cards = document.querySelectorAll('#managerServicesGrid .service-mgmt-card');
+  cards.forEach(card => {
+    if (cat === 'all' || card.getAttribute('data-category') === cat) {
+      card.style.display = 'flex';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+// Photo Preset Selector
+const SERVICE_PHOTO_PRESETS = {
+  hair: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&auto=format&fit=crop&q=80',
+  facial: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&auto=format&fit=crop&q=80',
+  nails: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=800&auto=format&fit=crop&q=80',
+  barber: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&auto=format&fit=crop&q=80',
+  makeup: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&auto=format&fit=crop&q=80',
+  spa: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop&q=80'
+};
+
+function setServiceImgPreset(formType, presetKey) {
+  const input = document.getElementById(`${formType}ServiceImgInput`);
+  if (input && SERVICE_PHOTO_PRESETS[presetKey]) {
+    input.value = SERVICE_PHOTO_PRESETS[presetKey];
+  }
+}
+
+function toggleCustomCategory(formType) {
+  const select = document.getElementById(`${formType}ServiceCatSelect`);
+  const custom = document.getElementById(`${formType}ServiceCatCustom`);
+  if (select.value === '__custom__') {
+    custom.style.display = 'block';
+    custom.required = true;
+    custom.focus();
+  } else {
+    custom.style.display = 'none';
+    custom.required = false;
+  }
+}
+
+// Modal Helpers
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('active');
+}
+
+// Add Service
+function openAddServiceModal() {
+  openModal('addServiceModal');
+}
+
+async function submitAddService(e) {
+  e.preventDefault();
+  const form = e.target;
+  let category = form.category_select.value;
+  if (category === '__custom__') {
+    category = form.category_custom.value.trim();
+  }
+
+  const payload = {
+    name: form.name.value.trim(),
+    category: category,
+    price: parseFloat(form.price.value),
+    duration_min: parseInt(form.duration_min.value, 10),
+    badge: form.badge.value.trim(),
+    image_url: form.image_url.value.trim(),
+    description: form.description.value.trim(),
+    is_popular: form.is_popular.checked ? 1 : 0
+  };
+
+  try {
+    const res = await fetch('/api/manager/services/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      window.location.href = '/admin?tab=manager';
+    } else {
+      alert(data.message || 'Failed to add service');
+    }
+  } catch (err) {
+    alert('Network error occurred.');
+  }
+}
+
+// Edit Service
+function openEditServiceModal(service) {
+  document.getElementById('editServiceId').value = service.id;
+  document.getElementById('editServiceName').value = service.name;
+  document.getElementById('editServicePrice').value = service.price;
+  document.getElementById('editServiceDuration').value = service.duration_min;
+  document.getElementById('editServiceBadge').value = service.badge || '';
+  document.getElementById('editServiceImgInput').value = service.image_url || '';
+  document.getElementById('editServiceDesc').value = service.description || '';
+  document.getElementById('editServiceIsPopular').checked = service.is_popular === 1;
+
+  const select = document.getElementById('editServiceCatSelect');
+  const custom = document.getElementById('editServiceCatCustom');
+  let optionExists = false;
+  for (let i = 0; i < select.options.length; i++) {
+    if (select.options[i].value === service.category) {
+      select.selectedIndex = i;
+      optionExists = true;
+      break;
+    }
+  }
+  if (!optionExists) {
+    select.value = '__custom__';
+    custom.style.display = 'block';
+    custom.value = service.category;
+  } else {
+    custom.style.display = 'none';
+  }
+
+  openModal('editServiceModal');
+}
+
+async function submitEditService(e) {
+  e.preventDefault();
+  const form = e.target;
+  let category = form.category_select.value;
+  if (category === '__custom__') {
+    category = form.category_custom.value.trim();
+  }
+
+  const payload = {
+    id: parseInt(document.getElementById('editServiceId').value, 10),
+    name: document.getElementById('editServiceName').value.trim(),
+    category: category,
+    price: parseFloat(document.getElementById('editServicePrice').value),
+    duration_min: parseInt(document.getElementById('editServiceDuration').value, 10),
+    badge: document.getElementById('editServiceBadge').value.trim(),
+    image_url: document.getElementById('editServiceImgInput').value.trim(),
+    description: document.getElementById('editServiceDesc').value.trim(),
+    is_popular: document.getElementById('editServiceIsPopular').checked ? 1 : 0
+  };
+
+  try {
+    const res = await fetch('/api/manager/services/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      window.location.href = '/admin?tab=manager';
+    } else {
+      alert(data.message || 'Update failed');
+    }
+  } catch (err) {
+    alert('Network error occurred.');
+  }
+}
+
+// Delete Service
+async function deleteService(id, name) {
+  if (!confirm(`Are you sure you want to remove the service "${name}" from your salon catalog?`)) return;
+
+  try {
+    const res = await fetch('/api/manager/services/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      window.location.href = '/admin?tab=manager';
+    } else {
+      alert(data.message || 'Failed to remove service');
+    }
+  } catch (err) {
+    alert('Network error occurred.');
+  }
+}
+
+// Add Worker
+function openAddWorkerModal() {
+  openModal('addWorkerModal');
+}
+
+function applyShiftPreset(prefix) {
+  const preset = document.getElementById(`${prefix}ShiftPreset`).value;
+  const startEl = document.getElementById(`${prefix}ShiftStart`);
+  const endEl = document.getElementById(`${prefix}ShiftEnd`);
+  const typeEl = document.getElementById(`${prefix}ShiftType`);
+
+  if (preset === 'full') {
+    startEl.value = '09:00 AM';
+    endEl.value = '07:00 PM';
+    typeEl.value = 'Full Day Shift (9 AM - 7 PM)';
+  } else if (preset === 'morning') {
+    startEl.value = '09:00 AM';
+    endEl.value = '02:30 PM';
+    typeEl.value = 'Morning Shift (9 AM - 2:30 PM)';
+  } else if (preset === 'afternoon') {
+    startEl.value = '01:00 PM';
+    endEl.value = '07:00 PM';
+    typeEl.value = 'Afternoon & Evening (1 PM - 7 PM)';
+  } else if (preset === 'midday') {
+    startEl.value = '11:00 AM';
+    endEl.value = '05:00 PM';
+    typeEl.value = 'Midday Shift (11 AM - 5 PM)';
+  }
+}
+
+async function submitAddWorker(e) {
+  e.preventDefault();
+  const form = e.target;
+  const daysChecked = Array.from(form.querySelectorAll('input[name="days"]:checked')).map(cb => cb.value);
+
+  const payload = {
+    name: form.name.value,
+    title: form.title.value,
+    experience_years: form.experience_years.value,
+    rating: form.rating.value,
+    image_url: form.image_url.value,
+    specialties: form.specialties.value,
+    bio: form.bio.value,
+    shift_start: form.shift_start.value,
+    shift_end: form.shift_end.value,
+    shift_type: form.shift_type.value,
+    available_days: daysChecked.join(',') || 'Mon,Tue,Wed,Thu,Fri,Sat',
+    is_active: 1
+  };
+
+  try {
+    const res = await fetch('/api/admin/workers/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      window.location.href = '/admin?tab=manager';
+    } else {
+      alert(data.message || 'Failed to add worker');
+    }
+  } catch (err) {
+    alert('Network error occurred.');
+  }
+}
+
+// Edit Worker
+function openEditWorkerModal(worker) {
+  document.getElementById('editWorkerId').value = worker.id;
+  document.getElementById('editWorkerName').value = worker.name;
+  document.getElementById('editWorkerTitle').value = worker.title;
+  document.getElementById('editWorkerExp').value = worker.experience_years;
+  document.getElementById('editWorkerRating').value = worker.rating;
+  document.getElementById('editWorkerImage').value = worker.image_url;
+  document.getElementById('editWorkerSpecialties').value = worker.specialties;
+  document.getElementById('editWorkerBio').value = worker.bio;
+  document.getElementById('editShiftStart').value = worker.shift_start || '09:00 AM';
+  document.getElementById('editShiftEnd').value = worker.shift_end || '07:00 PM';
+  document.getElementById('editShiftType').value = worker.shift_type || 'Full Day';
+  document.getElementById('editWorkerActive').value = worker.is_active !== undefined ? worker.is_active : 1;
+
+  // Set day checkboxes
+  const workerDays = (worker.available_days || '').split(',').map(d => d.trim());
+  const checkboxes = document.querySelectorAll('input[name="edit_days"]');
+  checkboxes.forEach(cb => {
+    cb.checked = workerDays.includes(cb.value);
+    const parent = cb.closest('.day-checkbox-label');
+    if (parent) {
+      if (cb.checked) parent.classList.add('checked');
+      else parent.classList.remove('checked');
+    }
+  });
+
+  openModal('editWorkerModal');
+}
+
+async function submitEditWorker(e) {
+  e.preventDefault();
+  const form = e.target;
+  const daysChecked = Array.from(form.querySelectorAll('input[name="edit_days"]:checked')).map(cb => cb.value);
+
+  const payload = {
+    id: parseInt(document.getElementById('editWorkerId').value, 10),
+    name: document.getElementById('editWorkerName').value,
+    title: document.getElementById('editWorkerTitle').value,
+    experience_years: document.getElementById('editWorkerExp').value,
+    rating: document.getElementById('editWorkerRating').value,
+    image_url: document.getElementById('editWorkerImage').value,
+    specialties: document.getElementById('editWorkerSpecialties').value,
+    bio: document.getElementById('editWorkerBio').value,
+    shift_start: document.getElementById('editShiftStart').value,
+    shift_end: document.getElementById('editShiftEnd').value,
+    shift_type: document.getElementById('editShiftType').value,
+    available_days: daysChecked.join(',') || 'Mon,Tue,Wed,Thu,Fri,Sat',
+    is_active: parseInt(document.getElementById('editWorkerActive').value, 10)
+  };
+
+  try {
+    const res = await fetch('/api/admin/workers/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      window.location.href = '/admin?tab=manager';
+    } else {
+      alert(data.message || 'Update failed');
+    }
+  } catch (err) {
+    alert('Network error occurred.');
+  }
+}
+
+// Toggle Worker Status
+async function toggleWorkerStatus(id) {
+  try {
+    const res = await fetch('/api/admin/workers/toggle-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id })
+    });
+    const data = await res.json();
+    if (data.success) {
+      window.location.href = '/admin?tab=manager';
+    }
+  } catch (err) {
+    alert('Error toggling worker status.');
+  }
+}
+
+// Delete Worker
+async function deleteWorker(id, name) {
+  if (!confirm(`Are you sure you want to remove ${name} from your salon staff?`)) return;
+
+  try {
+    const res = await fetch('/api/admin/workers/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(data.message);
+      window.location.href = '/admin?tab=manager';
+    }
+  } catch (err) {
+    alert('Error removing worker.');
+  }
+}
+
+// Live Schedule Viewer
+let activeModalWorkerId = null;
+function openWorkerScheduleModal(workerId, workerName) {
+  activeModalWorkerId = workerId;
+  document.getElementById('scheduleModalTitle').textContent = `Schedule & Shifts: ${workerName}`;
+  const today = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('scheduleModalDate');
+  dateInput.value = today;
+  dateInput.min = today;
+  openModal('workerScheduleModal');
+  loadModalSchedule();
+}
+
+async function loadModalSchedule() {
+  if (!activeModalWorkerId) return;
+  const dateVal = document.getElementById('scheduleModalDate').value;
+  const detailsEl = document.getElementById('scheduleModalDetails');
+  const slotsEl = document.getElementById('scheduleModalSlots');
+
+  detailsEl.innerHTML = 'Loading shift availability...';
+  slotsEl.innerHTML = '';
+
+  try {
+    const res = await fetch(`/api/specialist-availability?stylist_id=${activeModalWorkerId}&date=${dateVal}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      detailsEl.innerHTML = `<span style="color: red;">${data.error || 'Failed to load'}</span>`;
+      return;
+    }
+
+    const w = data.stylist;
+    detailsEl.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <div>
+          <strong>${w.name}</strong> • ${w.title}<br>
+          <small class="text-muted">🗓 Scheduled Days: ${w.available_days}</small>
+        </div>
+        <div style="text-align: right;">
+          <span class="shift-badge">⏰ ${w.shift_start} - ${w.shift_end}</span><br>
+          <small style="font-weight: 700; color: var(--gold-dark);">${w.shift_type}</small>
+        </div>
+      </div>
+      <div style="margin-top: 0.6rem; font-size: 0.85rem;">
+        Status on ${data.formatted_date}: 
+        ${data.is_working_day 
+          ? `<strong style="color: #17663D;">● Working Shift (${data.available_count} Open Slots, ${data.booked_count} Booked)</strong>` 
+          : `<strong style="color: #C03737;">○ Off-Duty (Next Available: ${data.next_working_date || 'N/A'})</strong>`}
+      </div>
+    `;
+
+    data.slots.forEach(slot => {
+      const btn = document.createElement('div');
+      btn.className = `avail-slot-btn is-${slot.status.replace('_', '-')}`;
+      btn.innerHTML = `
+        <span>${slot.time}</span>
+        <span class="slot-status-text">${slot.status.replace('_', ' ')}</span>
+      `;
+      btn.title = slot.reason;
+      slotsEl.appendChild(btn);
+    });
+
+  } catch (err) {
+    detailsEl.innerHTML = '<span style="color: red;">Error connecting to server.</span>';
+  }
+}
+</script>
+{% endblock %}

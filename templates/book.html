@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Your Slot — Maison De Beauté{% endblock %}
+
+{% block content %}
+<div class="booking-section">
+  <div class="container" id="bookingWizard">
+    
+    <!-- Stepper Progress Header -->
+    <div class="stepper-header">
+      <div class="step-item active" data-step="1">
+        <div class="step-number">1</div>
+        <span>1. Select Treatment</span>
+      </div>
+      <div class="step-separator"></div>
+      <div class="step-item" data-step="2">
+        <div class="step-number">2</div>
+        <span>2. Choose Specialist</span>
+      </div>
+      <div class="step-separator"></div>
+      <div class="step-item" data-step="3">
+        <div class="step-number">3</div>
+        <span>3. Date & Slot</span>
+      </div>
+      <div class="step-separator"></div>
+      <div class="step-item" data-step="4">
+        <div class="step-number">4</div>
+        <span>4. Your Details</span>
+      </div>
+    </div>
+
+    <div class="booking-layout">
+      <!-- Steps Forms Column -->
+      <div class="booking-steps-container">
+
+        <!-- STEP 1: SELECT TREATMENT -->
+        <div class="booking-card" id="step1">
+          <h2 class="step-title">Select Your Salon Treatment</h2>
+          <p class="step-desc">Choose from our signature haircuts, coloring, skincare, nails, or relaxation therapies.</p>
+
+          <div class="booking-services-list">
+            {% for s in services %}
+            <div class="select-service-item {% if preselected_service_id == s.id %}selected preselected{% endif %}"
+                 data-id="{{ s.id }}"
+                 data-name="{{ s.name }}"
+                 data-price="{{ s.price }}"
+                 data-duration="{{ s.duration_min }}">
+              <img src="{{ s.image_url }}" alt="{{ s.name }}" class="select-service-img">
+              <div class="select-service-info">
+                <span class="service-category-tag">{{ s.category }}</span>
+                <h4>{{ s.name }}</h4>
+                <p>{{ s.description[:110] }}...</p>
+              </div>
+              <div class="select-service-meta">
+                <div class="select-service-price">${{ "%.2f"|format(s.price) }}</div>
+                <div class="select-service-duration">⏱ {{ s.duration_min }} mins</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+            <button type="button" class="btn btn-primary btn-next" onclick="goToStep(2)" {% if not preselected_service_id %}disabled{% endif %}>
+              Continue to Specialist ➔
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 2: CHOOSE SALON SPECIALIST -->
+        <div class="booking-card" id="step2" style="display: none;">
+          <h2 class="step-title">Choose Your Specialist</h2>
+          <p class="step-desc">Select your preferred salon artisan or opt for the first available specialist.</p>
+
+          <div class="booking-stylists-list">
+            <!-- Any Available Option -->
+            <div class="select-stylist-item {% if not preselected_stylist_id %}selected{% endif %}"
+                 data-id="any"
+                 data-name="Any Available Specialist"
+                 data-role="Salon Match">
+              <div style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 2px solid var(--gold-primary); margin: 0 auto 0.75rem auto; box-shadow: 0 4px 12px rgba(197, 168, 128, 0.25);">
+                <img src="{{ url_for('static', filename='images/lady_logo_round.png') }}" alt="Any Specialist Salon Match" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+              </div>
+              <h3 class="select-stylist-name">Any Specialist</h3>
+              <div class="select-stylist-role">Fastest Availability</div>
+              <div class="select-stylist-rating">Auto-assigned top artisan</div>
+            </div>
+
+            <!-- Stylists -->
+            {% for stylist in stylists %}
+            <div class="select-stylist-item {% if preselected_stylist_id == stylist.id %}selected preselected{% endif %}"
+                 data-id="{{ stylist.id }}"
+                 data-name="{{ stylist.name }}"
+                 data-role="{{ stylist.title }}">
+              <img src="{{ stylist.image_url }}" alt="{{ stylist.name }}" class="select-stylist-avatar">
+              <h3 class="select-stylist-name">{{ stylist.name }}</h3>
+              <div class="select-stylist-role">{{ stylist.title[:30] }}...</div>
+              <div class="select-stylist-rating">★ {{ stylist.rating }} ({{ stylist.reviews_count }})</div>
+              <div style="margin-top: 0.5rem; font-size: 0.72rem; padding: 0.3rem 0.5rem; background: var(--bg-cream); border-radius: 4px; border: 1px solid var(--border-subtle); text-align: left;">
+                <div>⏰ <strong>Shift:</strong> {{ stylist.shift_start }} – {{ stylist.shift_end }}</div>
+                <div>🗓 <strong>Days:</strong> {{ stylist.available_days }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div style="margin-top: 2rem; display: flex; justify-content: space-between;">
+            <button type="button" class="btn btn-outline" onclick="goToStep(1)">
+              ← Back to Treatments
+            </button>
+            <button type="button" class="btn btn-primary btn-next" onclick="goToStep(3)">
+              Continue to Date & Slot ➔
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3: DATE & TIME SLOT PICKER -->
+        <div class="booking-card" id="step3" style="display: none;">
+          <h2 class="step-title">Select Date & Appointment Slot</h2>
+          <p class="step-desc">Pick your desired date to see real-time available time slots based on your specialist's shift.</p>
+
+          <!-- Shift & Off-duty alert box -->
+          <div id="stylistShiftAlert" style="display: none; padding: 0.9rem 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.88rem;"></div>
+
+          <div class="date-picker-box">
+            <label for="appointmentDate" style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Appointment Date:</label>
+            <input type="date" id="appointmentDate" class="custom-input" style="max-width: 320px;">
+          </div>
+
+          <div class="slots-grid-section">
+            <h4>Available Time Slots for Selected Date:</h4>
+            <div id="slotsLoading" style="display: none; padding: 1.5rem 0; color: var(--gold-dark); font-weight: 600;">
+              Checking stylist calendar and real-time slots...
+            </div>
+            <div class="slots-grid" id="slotsContainer">
+              <!-- Dynamically populated via booking.js -->
+            </div>
+          </div>
+
+          <div style="margin-top: 2rem; display: flex; justify-content: space-between;">
+            <button type="button" class="btn btn-outline" onclick="goToStep(2)">
+              ← Back to Specialists
+            </button>
+            <button type="button" class="btn btn-primary btn-next" onclick="goToStep(4)" disabled>
+              Continue to Details ➔
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 4: CUSTOMER DETAILS -->
+        <div class="booking-card" id="step4" style="display: none;">
+          <h2 class="step-title">Your Contact Information</h2>
+          <p class="step-desc">Provide your details to receive instant SMS and email booking confirmation.</p>
+
+          <form id="bookingForm">
+            <div class="form-group">
+              <label for="clientName">Full Name *</label>
+              <input type="text" id="clientName" class="custom-input" placeholder="e.g. Eleanor Vance" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="clientEmail">Email Address *</label>
+                <input type="email" id="clientEmail" class="custom-input" placeholder="e.g. eleanor@example.com" required>
+              </div>
+              <div class="form-group">
+                <label for="clientPhone">Phone Number *</label>
+                <input type="tel" id="clientPhone" class="custom-input" placeholder="e.g. +1 (555) 019-2834" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="clientNotes">Special Requests or Hair/Skin Notes (Optional)</label>
+              <textarea id="clientNotes" class="custom-input" rows="3" placeholder="Tell us about your hair length, previous coloring, skin sensitivities, or beverage preferences..."></textarea>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+              <button type="button" class="btn btn-outline" onclick="goToStep(3)">
+                ← Back to Slot Selection
+              </button>
+              <button type="submit" id="submitBookingBtn" class="btn btn-primary">
+                Confirm & Book Appointment →
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Sticky Live Summary Sidebar -->
+      <aside>
+        <div class="booking-summary-card">
+          <h3 class="summary-title">Appointment Summary</h3>
+
+          <div class="summary-item">
+            <span class="label">Treatment:</span>
+            <span class="val" id="summaryService">Select a treatment</span>
+          </div>
+
+          <div class="summary-item">
+            <span class="label">Duration:</span>
+            <span class="val" id="summaryDuration">—</span>
+          </div>
+
+          <div class="summary-item">
+            <span class="label">Specialist:</span>
+            <span class="val" id="summaryStylist">Any Specialist</span>
+          </div>
+
+          <div class="summary-item">
+            <span class="label">Slot & Date:</span>
+            <span class="val" id="summaryDateTime">Select date & time</span>
+          </div>
+
+          <div class="summary-total">
+            <span class="total-label">Estimated Total:</span>
+            <span class="total-val" id="summaryTotal">$0.00</span>
+          </div>
+
+          <div style="margin-top: 1.5rem; background: var(--bg-cream); border-radius: var(--radius-sm); padding: 0.9rem; font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
+            ✓ Free cancellation up to 24 hours prior.<br>
+            ✓ Complimentary consultation included.<br>
+            ✓ Organic refreshments served upon arrival.
+          </div>
+        </div>
+      </aside>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/booking.js') }}"></script>
+{% endblock %}

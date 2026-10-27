@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Your Slot — Maison De Beauté</title>
+  
+  <!-- Google Fonts: Poppins & Libre Baskerville -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="images/lady_logo_round.png">
+  <link rel="apple-touch-icon" href="images/lady_logo_round.png">
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Background Transparent Watermark Logo Ball (Rotates 360° on Scroll & Follows Cursor) -->
+  <div class="bg-watermark-wrapper" id="bgWatermarkWrapper" aria-hidden="true">
+    <div class="bg-watermark-ball" id="bgWatermarkBall">
+      <div class="bg-watermark-spinner" id="bgWatermarkSpinner">
+        <img src="images/lady_logo_round.png" alt="" class="bg-watermark-img">
+      </div>
+      <div class="bg-watermark-sheen"></div>
+    </div>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-logo" title="Maison De Beauté Home">
+        <div class="brand-icon">
+          <img src="images/lady_logo_round.png" alt="Maison De Beauté Lady Sketch Logo">
+        </div>
+        <div class="brand-name">
+          MAISON DE BEAUTÉ
+          <small>SALON & SPA ARTISTRY</small>
+        </div>
+      </a>
+
+      <ul class="nav-menu">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="services.html" class="nav-link">Services</a></li>
+        <li><a href="transformations.html" class="nav-link">Before & After</a></li>
+        <li><a href="team.html" class="nav-link">Our Specialists</a></li>
+        <li><a href="manage_booking.html" class="nav-link">My Booking</a></li>
+        <li><a href="admin.html" class="nav-link">Salon Portal</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="book.html" class="btn btn-primary btn-sm btn-slide-hover active">
+          <span class="btn-text">Book Slot</span> <span class="btn-arrow">→</span>
+        </a>
+        <button class="nav-toggle" aria-label="Toggle Navigation">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <main>
+    <div class="booking-section">
+      <div class="container" id="bookingWizard">
+        
+        <!-- Stepper Progress Header -->
+        <div class="stepper-header">
+          <div class="step-item active" data-step="1">
+            <div class="step-number">1</div>
+            <span>1. Select Treatment</span>
+          </div>
+          <div class="step-separator"></div>
+          <div class="step-item" data-step="2">
+            <div class="step-number">2</div>
+            <span>2. Choose Specialist</span>
+          </div>
+          <div class="step-separator"></div>
+          <div class="step-item" data-step="3">
+            <div class="step-number">3</div>
+            <span>3. Date & Slot</span>
+          </div>
+          <div class="step-separator"></div>
+          <div class="step-item" data-step="4">
+            <div class="step-number">4</div>
+            <span>4. Your Details</span>
+          </div>
+        </div>
+
+        <div class="booking-layout">
+          <!-- Steps Forms Column -->
+          <div class="booking-steps-container">
+
+            <!-- STEP 1: SELECT TREATMENT -->
+            <div class="booking-card" id="step1">
+              <h2 class="step-title">Select Your Salon Treatment</h2>
+              <p class="step-desc">Choose from our signature haircuts, coloring, skincare, nails, or relaxation therapies.</p>
+
+              <div class="booking-services-list">
+                <!-- Loaded dynamically via booking.js from SalonStore -->
+              </div>
+
+              <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+                <button type="button" class="btn btn-primary btn-next" onclick="goToStep(2)" disabled>
+                  Continue to Specialist ➔
+                </button>
+              </div>
+            </div>
+
+            <!-- STEP 2: CHOOSE SALON SPECIALIST -->
+            <div class="booking-card" id="step2" style="display: none;">
+              <h2 class="step-title">Choose Your Specialist</h2>
+              <p class="step-desc">Select your preferred salon artisan or opt for the first available specialist.</p>
+
+              <div class="booking-stylists-list">
+                <!-- Loaded dynamically via booking.js from SalonStore -->
+              </div>
+
+              <div style="margin-top: 2rem; display: flex; justify-content: space-between;">
+                <button type="button" class="btn btn-outline" onclick="goToStep(1)">
+                  ← Back to Treatments
+                </button>
+                <button type="button" class="btn btn-primary btn-next" onclick="goToStep(3)">
+                  Continue to Date & Slot ➔
+                </button>
+              </div>
+            </div>
+
+            <!-- STEP 3: DATE & TIME SLOT PICKER -->
+            <div class="booking-card" id="step3" style="display: none;">
+              <h2 class="step-title">Select Date & Appointment Slot</h2>
+              <p class="step-desc">Pick your desired date to see real-time available time slots based on your specialist's shift.</p>
+
+              <!-- Shift & Off-duty alert box -->
+              <div id="stylistShiftAlert" style="display: none; padding: 0.9rem 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; font-size: 0.88rem;"></div>
+
+              <div class="date-picker-box">
+                <label for="appointmentDate" style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Appointment Date:</label>
+                <input type="date" id="appointmentDate" class="custom-input" style="max-width: 320px;">
+              </div>
+
+              <div class="slots-grid-section">
+                <h4>Available Time Slots for Selected Date:</h4>
+                <div id="slotsLoading" style="display: none; padding: 1.5rem 0; color: var(--gold-dark); font-weight: 600;">
+                  Checking stylist calendar and real-time slots...
+                </div>
+                <div class="slots-grid" id="slotsContainer">
+                  <!-- Dynamically populated via booking.js -->
+                </div>
+              </div>
+
+              <div style="margin-top: 2rem; display: flex; justify-content: space-between;">
+                <button type="button" class="btn btn-outline" onclick="goToStep(2)">
+                  ← Back to Specialists
+                </button>
+                <button type="button" class="btn btn-primary btn-next" onclick="goToStep(4)" disabled>
+                  Continue to Details ➔
+                </button>
+              </div>
+            </div>
+
+            <!-- STEP 4: CUSTOMER DETAILS -->
+            <div class="booking-card" id="step4" style="display: none;">
+              <h2 class="step-title">Your Contact Information</h2>
+              <p class="step-desc">Provide your details to receive instant SMS and email booking confirmation.</p>
+
+              <form id="bookingForm">
+                <div class="form-group">
+                  <label for="clientName">Full Name *</label>
+                  <input type="text" id="clientName" class="custom-input" placeholder="e.g. Eleanor Vance" required>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="clientEmail">Email Address *</label>
+                    <input type="email" id="clientEmail" class="custom-input" placeholder="e.g. eleanor@example.com" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="clientPhone">Phone Number *</label>
+                    <input type="tel" id="clientPhone" class="custom-input" placeholder="e.g. +1 (555) 019-2834" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="clientNotes">Special Requests or Hair/Skin Notes (Optional)</label>
+                  <textarea id="clientNotes" class="custom-input" rows="3" placeholder="Tell us about your hair length, previous coloring, skin sensitivities, or beverage preferences..."></textarea>
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+                  <button type="button" class="btn btn-outline" onclick="goToStep(3)">
+                    ← Back to Slot Selection
+                  </button>
+                  <button type="submit" id="submitBookingBtn" class="btn btn-primary">
+                    Confirm & Book Appointment →
+                  </button>
+                </div>
+              </form>
+            </div>
+
+          </div>
+
+          <!-- Sticky Live Summary Sidebar -->
+          <aside>
+            <div class="booking-summary-card">
+              <h3 class="summary-title">Appointment Summary</h3>
+
+              <div class="summary-item">
+                <span class="label">Treatment:</span>
+                <span class="val" id="summaryService">Select a treatment</span>
+              </div>
+
+              <div class="summary-item">
+                <span class="label">Duration:</span>
+                <span class="val" id="summaryDuration">—</span>
+              </div>
+
+              <div class="summary-item">
+                <span class="label">Specialist:</span>
+                <span class="val" id="summaryStylist">Any Specialist</span>
+              </div>
+
+              <div class="summary-item">
+                <span class="label">Slot & Date:</span>
+                <span class="val" id="summaryDateTime">Select date & time</span>
+              </div>
+
+              <div class="summary-total">
+                <span class="total-label">Estimated Total:</span>
+                <span class="total-val" id="summaryTotal">$0.00</span>
+              </div>
+
+              <div style="margin-top: 1.5rem; background: var(--bg-cream); border-radius: var(--radius-sm); padding: 0.9rem; font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
+                ✓ Free cancellation up to 24 hours prior.<br>
+                ✓ Complimentary consultation included.<br>
+                ✓ Organic refreshments served upon arrival.
+              </div>
+            </div>
+          </aside>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-logo" style="margin-bottom: 1.25rem;">
+            <div class="brand-icon">
+              <img src="images/lady_logo_round.png" alt="Maison De Beauté Lady Sketch Logo">
+            </div>
+            <div class="brand-name" style="color: #FFFFFF;">
+              MAISON DE BEAUTÉ
+              <small style="color: var(--gold-light);">HAIR • SKIN • NAILS • SPA</small>
+            </div>
+          </div>
+          <p style="color: #A3A8B5; font-size: 0.9rem; line-height: 1.7; margin-bottom: 1.5rem;">
+            A sanctuary where master artistry meets modern luxury. Personalized hair architecture, medical aesthetics, and bespoke styling designed to reveal your radiant best.
+          </p>
+          <div class="footer-social-links">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Follow Maison De Beauté on Instagram" title="Instagram">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            </a>
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Follow Maison De Beauté on Facebook" title="Facebook">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Follow Maison De Beauté on Pinterest" title="Pinterest">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0c-6.627 0-12 5.372-12 12 0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345-.09.375-.291 1.199-.334 1.357-.057.241-.188.293-.433.177-1.616-.752-2.626-3.111-2.626-5.008 0-4.078 2.964-7.824 8.548-7.824 4.488 0 7.977 3.2 7.977 7.477 0 4.463-2.813 8.056-6.721 8.056-1.312 0-2.545-.682-2.969-1.488l-.808 3.082c-.293 1.127-1.087 2.539-1.621 3.407 1.144.354 2.361.545 3.626.545 6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>Salon Services</h4>
+          <ul>
+            <li><a href="services.html">Hair Styling & Cuts</a></li>
+            <li><a href="services.html">Balayage & Color Art</a></li>
+            <li><a href="services.html">Medical Hydra-Glow Facials</a></li>
+            <li><a href="services.html">Men's Executive Grooming</a></li>
+            <li><a href="services.html">Russian Gel Manicures</a></li>
+            <li><a href="services.html">Bridal Glam & Makeup</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Client Care</h4>
+          <ul>
+            <li><a href="book.html">Book Appointment</a></li>
+            <li><a href="transformations.html">Before & After Gallery</a></li>
+            <li><a href="team.html">Select Your Specialist</a></li>
+            <li><a href="manage_booking.html">View or Cancel Booking</a></li>
+            <li><a href="admin.html">Staff Management Portal</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Salon Hours & Visit</h4>
+          <p style="color: #A3A8B5; font-size: 0.9rem; line-height: 1.7; margin-bottom: 1rem;">
+            📍 <strong>742 Fifth Avenue, Luxury Suite 400</strong><br>
+            New York, NY 10019
+          </p>
+          <p style="color: #A3A8B5; font-size: 0.88rem; line-height: 1.6;">
+            <strong>Mon – Fri:</strong> 9:00 AM – 8:00 PM<br>
+            <strong>Saturday:</strong> 9:00 AM – 7:00 PM<br>
+            <strong>Sunday:</strong> 10:00 AM – 6:00 PM
+          </p>
+          <div style="margin-top: 1.25rem;">
+            <a href="tel:+15552345678" style="color: var(--gold-light); font-weight: 600; font-size: 0.95rem;">📞 +1 (555) 234-5678</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Maison De Beauté. All rights reserved. Crafted with luxury artistry.</div>
+        <div style="display: flex; gap: 1.5rem;">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+          <a href="#">Cancellation Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core Scripts -->
+  <script src="js/store.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/booking.js"></script>
+</body>
+</html>

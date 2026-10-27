@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Your Appointment — Maison De Beauté</title>
+  
+  <!-- Google Fonts: Poppins & Libre Baskerville -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="images/lady_logo_round.png">
+  <link rel="apple-touch-icon" href="images/lady_logo_round.png">
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Background Transparent Watermark Logo Ball (Rotates 360° on Scroll & Follows Cursor) -->
+  <div class="bg-watermark-wrapper" id="bgWatermarkWrapper" aria-hidden="true">
+    <div class="bg-watermark-ball" id="bgWatermarkBall">
+      <div class="bg-watermark-spinner" id="bgWatermarkSpinner">
+        <img src="images/lady_logo_round.png" alt="" class="bg-watermark-img">
+      </div>
+      <div class="bg-watermark-sheen"></div>
+    </div>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-logo" title="Maison De Beauté Home">
+        <div class="brand-icon">
+          <img src="images/lady_logo_round.png" alt="Maison De Beauté Lady Sketch Logo">
+        </div>
+        <div class="brand-name">
+          MAISON DE BEAUTÉ
+          <small>SALON & SPA ARTISTRY</small>
+        </div>
+      </a>
+
+      <ul class="nav-menu">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="services.html" class="nav-link">Services</a></li>
+        <li><a href="transformations.html" class="nav-link">Before & After</a></li>
+        <li><a href="team.html" class="nav-link">Our Specialists</a></li>
+        <li><a href="manage_booking.html" class="nav-link active">My Booking</a></li>
+        <li><a href="admin.html" class="nav-link">Salon Portal</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="book.html" class="btn btn-primary btn-sm btn-slide-hover">
+          <span class="btn-text">Book Slot</span> <span class="btn-arrow">→</span>
+        </a>
+        <button class="nav-toggle" aria-label="Toggle Navigation">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <main>
+    <div style="background: var(--bg-sand); padding: 4rem 0 3rem 0; border-bottom: 1px solid var(--border-subtle);">
+      <div class="container text-center">
+        <span class="section-tag">Client Portal</span>
+        <h1 class="section-title">Manage Your Appointment</h1>
+        <p class="section-subtitle">
+          Check your reserved slot, review treatment details, or modify your booking with your unique reference code.
+        </p>
+      </div>
+    </div>
+
+    <section style="padding: 4rem 0 6rem 0;">
+      <div class="container">
+        
+        <!-- Search Form -->
+        <div style="max-width: 580px; margin: 0 auto 3rem auto; background: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 2.25rem; box-shadow: var(--shadow-sm);">
+          <h3 style="font-family: var(--font-serif); font-size: 1.4rem; margin-bottom: 0.5rem; text-align: center;">Look Up Your Reservation</h3>
+          <p style="font-size: 0.88rem; color: var(--text-muted); text-align: center; margin-bottom: 1.75rem;">
+            Enter your booking reference code (e.g. SLN-78210) and your email or phone number.
+          </p>
+
+          <div id="lookupError" style="display: none; background: #FCE8E8; color: #C03737; border-radius: var(--radius-sm); padding: 0.85rem 1.25rem; font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem;">
+            ⚠️ No appointment found matching that booking code and contact information.
+          </div>
+
+          <form id="lookupForm">
+            <div class="form-group">
+              <label for="booking_code">Booking Reference Code</label>
+              <input type="text" name="booking_code" id="booking_code" class="custom-input" placeholder="e.g. SLN-78210" required style="text-transform: uppercase;">
+            </div>
+
+            <div class="form-group">
+              <label for="contact">Email Address or Phone Number</label>
+              <input type="text" name="contact" id="contact" class="custom-input" placeholder="e.g. yourname@example.com or 555-234-5678" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1.25rem;">
+              Find Appointment ➔
+            </button>
+          </form>
+        </div>
+
+        <!-- Booking Details Result -->
+        <div id="bookingResultContainer" style="display: none;">
+          <div class="confirmation-box" style="margin: 0 auto; max-width: 680px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
+              <div>
+                <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Reference</span>
+                <h3 id="resCode" style="font-family: monospace; font-size: 1.5rem; color: var(--gold-dark); margin: 0;">SLN-00000</h3>
+              </div>
+              <div>
+                <span id="resStatusBadge" class="status-badge status-confirmed" style="font-size: 0.85rem; padding: 0.4rem 1rem;">
+                  confirmed
+                </span>
+              </div>
+            </div>
+
+            <table class="receipt-table">
+              <tbody id="resReceiptBody">
+                <!-- Loaded dynamically -->
+              </tbody>
+            </table>
+
+            <div id="resActionsRow" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem;">
+              <button type="button" id="btnResIcs" class="btn btn-outline btn-sm">
+                📅 Export to Calendar
+              </button>
+              <button type="button" id="btnCancelAppt" class="btn btn-sm" style="background: #FCE8E8; color: #C03737; border: 1px solid #F5C6C6;">
+                Cancel Appointment
+              </button>
+            </div>
+            <div id="resNewBookingRow" style="display: none; margin-top: 1.5rem;">
+              <a href="book.html" class="btn btn-primary">
+                Book a New Appointment →
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-logo" style="margin-bottom: 1.25rem;">
+            <div class="brand-icon">
+              <img src="images/lady_logo_round.png" alt="Maison De Beauté Lady Sketch Logo">
+            </div>
+            <div class="brand-name" style="color: #FFFFFF;">
+              MAISON DE BEAUTÉ
+              <small style="color: var(--gold-light);">HAIR • SKIN • NAILS • SPA</small>
+            </div>
+          </div>
+          <p style="color: #A3A8B5; font-size: 0.9rem; line-height: 1.7; margin-bottom: 1.5rem;">
+            A sanctuary where master artistry meets modern luxury. Personalized hair architecture, medical aesthetics, and bespoke styling designed to reveal your radiant best.
+          </p>
+          <div class="footer-social-links">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Follow Maison De Beauté on Instagram" title="Instagram">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            </a>
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Follow Maison De Beauté on Facebook" title="Facebook">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer" class="footer-social-btn" aria-label="Follow Maison De Beauté on Pinterest" title="Pinterest">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0c-6.627 0-12 5.372-12 12 0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345-.09.375-.291 1.199-.334 1.357-.057.241-.188.293-.433.177-1.616-.752-2.626-3.111-2.626-5.008 0-4.078 2.964-7.824 8.548-7.824 4.488 0 7.977 3.2 7.977 7.477 0 4.463-2.813 8.056-6.721 8.056-1.312 0-2.545-.682-2.969-1.488l-.808 3.082c-.293 1.127-1.087 2.539-1.621 3.407 1.144.354 2.361.545 3.626.545 6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>Salon Services</h4>
+          <ul>
+            <li><a href="services.html">Hair Styling & Cuts</a></li>
+            <li><a href="services.html">Balayage & Color Art</a></li>
+            <li><a href="services.html">Medical Hydra-Glow Facials</a></li>
+            <li><a href="services.html">Men's Executive Grooming</a></li>
+            <li><a href="services.html">Russian Gel Manicures</a></li>
+            <li><a href="services.html">Bridal Glam & Makeup</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Client Care</h4>
+          <ul>
+            <li><a href="book.html">Book Appointment</a></li>
+            <li><a href="transformations.html">Before & After Gallery</a></li>
+            <li><a href="team.html">Select Your Specialist</a></li>
+            <li><a href="manage_booking.html">View or Cancel Booking</a></li>
+            <li><a href="admin.html">Staff Management Portal</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Salon Hours & Visit</h4>
+          <p style="color: #A3A8B5; font-size: 0.9rem; line-height: 1.7; margin-bottom: 1rem;">
+            📍 <strong>742 Fifth Avenue, Luxury Suite 400</strong><br>
+            New York, NY 10019
+          </p>
+          <p style="color: #A3A8B5; font-size: 0.88rem; line-height: 1.6;">
+            <strong>Mon – Fri:</strong> 9:00 AM – 8:00 PM<br>
+            <strong>Saturday:</strong> 9:00 AM – 7:00 PM<br>
+            <strong>Sunday:</strong> 10:00 AM – 6:00 PM
+          </p>
+          <div style="margin-top: 1.25rem;">
+            <a href="tel:+15552345678" style="color: var(--gold-light); font-weight: 600; font-size: 0.95rem;">📞 +1 (555) 234-5678</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Maison De Beauté. All rights reserved. Crafted with luxury artistry.</div>
+        <div style="display: flex; gap: 1.5rem;">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+          <a href="#">Cancellation Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core Scripts -->
+  <script src="js/store.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- Client Lookup Script -->
+  <script>
+    let activeBooking = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('lookupForm');
+      const errBox = document.getElementById('lookupError');
+      const container = document.getElementById('bookingResultContainer');
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const code = document.getElementById('booking_code').value.trim();
+        const contact = document.getElementById('contact').value.trim();
+
+        errBox.style.display = 'none';
+        container.style.display = 'none';
+
+        const found = window.SalonStore.findBooking(code, contact);
+
+        if (!found) {
+          errBox.style.display = 'block';
+          return;
+        }
+
+        activeBooking = found;
+        renderBookingDetails(found);
+      });
+
+      // Check URL parameters for direct lookup (?code=...&contact=...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramCode = urlParams.get('code');
+      const paramContact = urlParams.get('contact');
+      if (paramCode && paramContact) {
+        document.getElementById('booking_code').value = paramCode;
+        document.getElementById('contact').value = paramContact;
+        form.dispatchEvent(new Event('submit'));
+      }
+    });
+
+    function renderBookingDetails(b) {
+      const container = document.getElementById('bookingResultContainer');
+      const resCode = document.getElementById('resCode');
+      const resStatusBadge = document.getElementById('resStatusBadge');
+      const tbody = document.getElementById('resReceiptBody');
+      const btnIcs = document.getElementById('btnResIcs');
+      const btnCancel = document.getElementById('btnCancelAppt');
+      const actionsRow = document.getElementById('resActionsRow');
+      const newBookingRow = document.getElementById('resNewBookingRow');
+
+      resCode.textContent = b.booking_code;
+      resStatusBadge.className = `status-badge status-${b.status}`;
+      resStatusBadge.textContent = b.status;
+
+      tbody.innerHTML = `
+        <tr>
+          <td class="label">Client:</td>
+          <td class="value">${escapeHtml(b.customer_name)}</td>
+        </tr>
+        <tr>
+          <td class="label">Treatment:</td>
+          <td class="value">${escapeHtml(b.service_name)}</td>
+        </tr>
+        <tr>
+          <td class="label">Salon Specialist:</td>
+          <td class="value">${escapeHtml(b.stylist_name)}</td>
+        </tr>
+        <tr>
+          <td class="label">Date & Slot:</td>
+          <td class="value">${escapeHtml(b.appointment_date)} at ${escapeHtml(b.appointment_time)}</td>
+        </tr>
+        <tr>
+          <td class="label">Total Price:</td>
+          <td class="value" style="color: var(--gold-dark);">$${Number(b.total_price).toFixed(2)}</td>
+        </tr>
+        ${b.notes ? `
+          <tr>
+            <td class="label">Notes:</td>
+            <td class="value">${escapeHtml(b.notes)}</td>
+          </tr>
+        ` : ''}
+      `;
+
+      if (b.status === 'confirmed') {
+        actionsRow.style.display = 'flex';
+        newBookingRow.style.display = 'none';
+
+        btnIcs.onclick = () => window.SalonStore.downloadIcs(b);
+        btnCancel.onclick = () => {
+          if (!confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) return;
+          const res = window.SalonStore.cancelBooking(b.booking_code);
+          if (res.success) {
+            window.showToast('Your appointment has been cancelled successfully.', 'success');
+            b.status = 'cancelled';
+            renderBookingDetails(b);
+          } else {
+            alert(res.message || 'Could not cancel booking.');
+          }
+        };
+      } else {
+        actionsRow.style.display = 'none';
+        newBookingRow.style.display = 'block';
+      }
+
+      container.style.display = 'block';
+      container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>

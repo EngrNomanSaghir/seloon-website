@@ -1,0 +1,355 @@
+{% extends 'base.html' %}
+
+{% block title %}Our Master Specialists & Shifts — Maison De Beauté{% endblock %}
+
+{% block content %}
+<div style="background: var(--bg-sand); padding: 4rem 0 3rem 0; border-bottom: 1px solid var(--border-subtle);">
+  <div class="container text-center">
+    <span class="section-tag">Meet the Artists & Check Schedule</span>
+    <h1 class="section-title">Master Stylists & Working Shifts</h1>
+    <p class="section-subtitle" style="max-width: 680px; margin: 0 auto 1.5rem auto;">
+      Our artisans bring world-class training from Paris, London, and New York. Check the live shift schedule and slot availability of your favorite specialist below.
+    </p>
+  </div>
+</div>
+
+<section style="padding: 3.5rem 0 6rem 0;">
+  <div class="container">
+
+    <!-- Interactive Availability Finder for Favorite Person -->
+    <div class="specialist-avail-finder" id="favAvailabilityFinder">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <span class="section-tag" style="margin-bottom: 0.25rem;">Live Availability Portal</span>
+          <h2 style="font-family: var(--font-serif); font-size: 1.6rem; margin: 0; color: var(--text-dark);">
+            Check Availability of Your Favorite Specialist
+          </h2>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted);">
+          Real-time synchronized with salon shift calendars
+        </div>
+      </div>
+
+      <div class="avail-controls-row">
+        <div style="flex: 2; min-width: 250px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--text-dark);">
+            Choose Your Favorite Person:
+          </label>
+          <select id="finderStylistSelect" class="custom-input" style="font-weight: 600;">
+            {% for s in stylists %}
+            <option value="{{ s.id }}">
+              {{ s.name }} ({{ s.title }}) — Shift: {{ s.shift_start }} to {{ s.shift_end }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="flex: 1.5; min-width: 200px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--text-dark);">
+            Select Date:
+          </label>
+          <input type="date" id="finderDateInput" class="custom-input">
+        </div>
+
+        <div>
+          <button type="button" class="btn btn-dark" onclick="checkFinderAvailability()">
+            Check Slots ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Availability Results Box -->
+      <div id="finderResultsBox" class="avail-slots-box" style="display: none;">
+        <!-- Populated dynamically via JS -->
+      </div>
+    </div>
+
+    <!-- Specialists Grid -->
+    <div class="text-center" style="margin-bottom: 2.5rem;">
+      <span class="section-tag">All Specialists</span>
+      <h2 class="section-title">Select Your Specialist & Book</h2>
+    </div>
+
+    <div class="team-grid">
+      {% for stylist in stylists %}
+      <div class="stylist-card">
+        <div class="stylist-image-box">
+          <img src="{{ stylist.image_url }}" alt="{{ stylist.name }}">
+          <div class="stylist-rating-badge">
+            <span class="star">★</span> {{ stylist.rating }} ({{ stylist.reviews_count }} reviews)
+          </div>
+        </div>
+        <div class="stylist-body">
+          <h2 class="stylist-name">{{ stylist.name }}</h2>
+          <div class="stylist-title">{{ stylist.title }}</div>
+          <div style="font-size: 0.8rem; color: var(--gold-dark); font-weight: 700; margin-bottom: 0.5rem;">
+            {{ stylist.experience_years }} Years Master Experience
+          </div>
+          <p class="stylist-bio">{{ stylist.bio }}</p>
+          
+          <!-- Shift & Schedule Info Box -->
+          <div style="background: var(--bg-cream); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.85rem; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; font-size: 0.82rem;">
+              <span style="font-weight: 600; color: var(--text-muted);">Working Shift:</span>
+              <span class="shift-badge">⏰ {{ stylist.shift_start }} – {{ stylist.shift_end }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem;">
+              <span style="font-weight: 600; color: var(--text-muted);">Work Days:</span>
+              <span style="font-weight: 700; color: var(--text-dark);">🗓 {{ stylist.available_days }}</span>
+            </div>
+          </div>
+
+          <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.4rem;">
+            Specialties & Core Techniques:
+          </div>
+          <div class="stylist-specialties" style="margin-bottom: 1.25rem;">
+            {% for spec in stylist.specialties.split(',') %}
+              <span class="specialty-tag">{{ spec.strip() }}</span>
+            {% endfor %}
+          </div>
+
+          <div style="display: flex; gap: 0.6rem; flex-direction: column;">
+            <button type="button" class="btn btn-outline btn-block" onclick="openClientAvailabilityModal({{ stylist.id }}, '{{ stylist.name }}')">
+              👁 Check Live Availability & Shifts
+            </button>
+            <a href="{{ url_for('book_page', stylist_id=stylist.id) }}" class="btn btn-primary btn-block">
+              Book with {{ stylist.name.split(' ')[0] }} →
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================================
+     CLIENT SPECIALIST AVAILABILITY MODAL
+     ========================================================================= -->
+<div class="salon-modal-backdrop" id="clientAvailModal">
+  <div class="salon-modal-dialog" style="max-width: 650px;">
+    <div class="salon-modal-header">
+      <h3 id="clientModalTitle">Specialist Live Availability</h3>
+      <button type="button" class="salon-modal-close" onclick="closeClientAvailModal()">&times;</button>
+    </div>
+    <div class="salon-modal-body">
+      <!-- Date Selector with quick shortcuts -->
+      <div style="margin-bottom: 1.5rem;">
+        <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">Select Date to Inspect Slots:</label>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <input type="date" id="clientModalDateInput" class="custom-input" style="max-width: 260px;" onchange="loadClientModalData()">
+          <div style="display: flex; gap: 0.4rem;">
+            <button type="button" class="btn btn-sm btn-outline" onclick="setClientModalDate(0)">Today</button>
+            <button type="button" class="btn btn-sm btn-outline" onclick="setClientModalDate(1)">Tomorrow</button>
+            <button type="button" class="btn btn-sm btn-outline" onclick="setClientModalDate(2)">In 2 Days</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Specialist & Shift Summary -->
+      <div id="clientModalSummary" style="background: var(--bg-cream); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-bottom: 1.5rem;">
+        Loading specialist schedule...
+      </div>
+
+      <!-- Slots Header with Color Legend -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h4 style="font-size: 0.92rem; margin: 0;">Available Time Slots for Selected Date:</h4>
+        <div style="display: flex; gap: 0.6rem; font-size: 0.72rem; font-weight: 700;">
+          <span style="color: #17663D;">● Available</span>
+          <span style="color: #9DA3B4;">━ Booked</span>
+          <span style="color: #B5BAC9;">○ Outside Shift</span>
+        </div>
+      </div>
+
+      <!-- Slots Grid -->
+      <div class="avail-slot-grid" id="clientModalSlotsGrid">
+        <!-- Populated via JS -->
+      </div>
+    </div>
+    <div class="salon-modal-footer">
+      <button type="button" class="btn btn-outline btn-sm" onclick="closeClientAvailModal()">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const dateInput = document.getElementById('finderDateInput');
+  if (dateInput) {
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+    dateInput.min = today;
+  }
+});
+
+// Finder Availability Check
+async function checkFinderAvailability() {
+  const stylistId = document.getElementById('finderStylistSelect').value;
+  const dateVal = document.getElementById('finderDateInput').value;
+  const resultsBox = document.getElementById('finderResultsBox');
+
+  if (!stylistId || !dateVal) {
+    alert('Please choose a specialist and date.');
+    return;
+  }
+
+  resultsBox.style.display = 'block';
+  resultsBox.innerHTML = '<p style="color: var(--gold-dark); font-weight: 600;">Checking specialist live shift schedule...</p>';
+
+  try {
+    const res = await fetch(`/api/specialist-availability?stylist_id=${stylistId}&date=${dateVal}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      resultsBox.innerHTML = `<p style="color: red;">${data.error || 'Failed to fetch schedule.'}</p>`;
+      return;
+    }
+
+    const s = data.stylist;
+    let html = `
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <img src="${s.image_url}" alt="${s.name}" style="width: 58px; height: 58px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold-light);">
+          <div>
+            <h3 style="font-family: var(--font-serif); font-size: 1.3rem; margin: 0;">${s.name}</h3>
+            <div style="font-size: 0.85rem; color: var(--gold-dark); font-weight: 700;">${s.title}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">🗓 Scheduled Days: <strong>${s.available_days}</strong></div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <span class="shift-badge" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">⏰ Shift: ${s.shift_start} – ${s.shift_end}</span>
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--gold-dark); margin-top: 0.25rem;">${s.shift_type}</div>
+        </div>
+      </div>
+
+      <div style="padding: 0.85rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; background: ${data.is_working_day ? '#F0FAF4' : '#FFF5F5'}; border: 1px solid ${data.is_working_day ? '#A3E3BE' : '#F8D7DA'};">
+        ${data.is_working_day
+          ? `<strong style="color: #17663D;">✓ Working On Shift on ${data.formatted_date}</strong> — ${data.available_count} of ${data.total_slots} slots available right now.`
+          : `<strong style="color: #C03737;">⚠️ ${s.name} is off-duty on ${data.day_name}s.</strong> Next scheduled working day: <strong>${data.next_working_date || 'N/A'}</strong>.`
+        }
+      </div>
+
+      <h4 style="font-size: 0.92rem; margin-bottom: 0.5rem;">Select an Open Slot to Book Instantly with ${s.name}:</h4>
+      <div class="avail-slot-grid">
+    `;
+
+    data.slots.forEach(slot => {
+      if (slot.available) {
+        html += `
+          <a href="/book?stylist_id=${s.id}&date=${data.date}&time=${encodeURIComponent(slot.time)}" class="avail-slot-btn is-available">
+            <span>${slot.time}</span>
+            <span class="slot-status-text">Book Slot →</span>
+          </a>
+        `;
+      } else {
+        html += `
+          <div class="avail-slot-btn is-${slot.status.replace('_', '-')}" title="${slot.reason}">
+            <span>${slot.time}</span>
+            <span class="slot-status-text">${slot.status.replace('_', ' ')}</span>
+          </div>
+        `;
+      }
+    });
+
+    html += `</div>`;
+    resultsBox.innerHTML = html;
+
+  } catch (err) {
+    resultsBox.innerHTML = '<p style="color: red;">Error loading availability.</p>';
+  }
+}
+
+// Modal Live Availability
+let currentClientModalStylistId = null;
+
+function openClientAvailabilityModal(stylistId, stylistName) {
+  currentClientModalStylistId = stylistId;
+  document.getElementById('clientModalTitle').textContent = `Availability & Shifts: ${stylistName}`;
+  const today = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('clientModalDateInput');
+  dateInput.value = today;
+  dateInput.min = today;
+
+  document.getElementById('clientAvailModal').classList.add('active');
+  loadClientModalData();
+}
+
+function closeClientAvailModal() {
+  document.getElementById('clientAvailModal').classList.remove('active');
+}
+
+function setClientModalDate(daysOffset) {
+  const d = new Date();
+  d.setDate(d.getDate() + daysOffset);
+  document.getElementById('clientModalDateInput').value = d.toISOString().split('T')[0];
+  loadClientModalData();
+}
+
+async function loadClientModalData() {
+  if (!currentClientModalStylistId) return;
+  const dateVal = document.getElementById('clientModalDateInput').value;
+  const summaryEl = document.getElementById('clientModalSummary');
+  const slotsEl = document.getElementById('clientModalSlotsGrid');
+
+  summaryEl.innerHTML = 'Loading specialist shift schedule...';
+  slotsEl.innerHTML = '';
+
+  try {
+    const res = await fetch(`/api/specialist-availability?stylist_id=${currentClientModalStylistId}&date=${dateVal}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      summaryEl.innerHTML = `<span style="color: red;">${data.error || 'Failed to load'}</span>`;
+      return;
+    }
+
+    const s = data.stylist;
+    summaryEl.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <strong style="font-size: 1.05rem;">${s.name}</strong> • ${s.title}<br>
+          <small class="text-muted">🗓 Work Days: <strong>${s.available_days}</strong></small>
+        </div>
+        <div style="text-align: right;">
+          <span class="shift-badge">⏰ ${s.shift_start} – ${s.shift_end}</span><br>
+          <small style="font-weight: 700; color: var(--gold-dark);">${s.shift_type}</small>
+        </div>
+      </div>
+      <div style="margin-top: 0.75rem; font-size: 0.85rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-subtle);">
+        Schedule for <strong>${data.formatted_date}</strong>: 
+        ${data.is_working_day 
+          ? `<span style="color: #17663D; font-weight: 700;">● On Duty (${data.available_count} Open Slots)</span>` 
+          : `<span style="color: #C03737; font-weight: 700;">○ Off-Duty (Next Available: ${data.next_working_date || 'N/A'})</span>`}
+      </div>
+    `;
+
+    data.slots.forEach(slot => {
+      if (slot.available) {
+        const a = document.createElement('a');
+        a.href = `/book?stylist_id=${s.id}&date=${data.date}&time=${encodeURIComponent(slot.time)}`;
+        a.className = 'avail-slot-btn is-available';
+        a.innerHTML = `
+          <span>${slot.time}</span>
+          <span class="slot-status-text">Book Slot →</span>
+        `;
+        slotsEl.appendChild(a);
+      } else {
+        const div = document.createElement('div');
+        div.className = `avail-slot-btn is-${slot.status.replace('_', '-')}`;
+        div.title = slot.reason;
+        div.innerHTML = `
+          <span>${slot.time}</span>
+          <span class="slot-status-text">${slot.status.replace('_', ' ')}</span>
+        `;
+        slotsEl.appendChild(div);
+      }
+    });
+
+  } catch (err) {
+    summaryEl.innerHTML = '<span style="color: red;">Error connecting to server.</span>';
+  }
+}
+</script>
+{% endblock %}

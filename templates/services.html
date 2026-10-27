@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Our Services & Treatments — Maison De Beauté{% endblock %}
+
+{% block content %}
+<div style="background: var(--bg-sand); padding: 4rem 0 3rem 0; border-bottom: 1px solid var(--border-subtle);">
+  <div class="container text-center">
+    <span class="section-tag">Comprehensive Salon Menu</span>
+    <h1 class="section-title">Luxury Treatments & Services</h1>
+    <p class="section-subtitle" style="margin-bottom: 1.5rem;">
+      Indulge in tailored hair design, multidimensional coloring, medical skin therapy, executive grooming, and relaxing spa rituals.
+    </p>
+
+    <!-- Category filter buttons -->
+    <div class="services-filter-bar">
+      <button class="filter-btn service-filter-btn active" data-category="all">All Services</button>
+      {% for cat in categories %}
+        <button class="filter-btn service-filter-btn" data-category="{{ cat }}">{{ cat }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<section style="padding: 4rem 0 6rem 0;">
+  <div class="container">
+    <div class="services-grid" id="servicesGrid">
+      {% for service in services %}
+      <div class="service-card service-card-item" data-category="{{ service.category }}">
+        <div class="service-image-wrapper">
+          <img src="{{ service.image_url }}" alt="{{ service.name }}">
+          {% if service.badge %}
+            <span class="service-badge">{{ service.badge }}</span>
+          {% endif %}
+        </div>
+        <div class="service-content">
+          <span class="service-category-tag">{{ service.category }}</span>
+          <h3 class="service-title">{{ service.name }}</h3>
+          <p class="service-desc">{{ service.description }}</p>
+          <div class="service-meta">
+            <div>
+              <span class="service-price">${{ "%.2f"|format(service.price) }}</span>
+              <span class="service-duration">⏱ {{ service.duration_min }} mins</span>
+            </div>
+            <a href="{{ url_for('book_page', service_id=service.id) }}" class="btn btn-outline btn-sm">Book This Slot</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
