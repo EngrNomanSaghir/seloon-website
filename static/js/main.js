@@ -1,105 +1,61 @@
 /* ==========================================================================
-   MAISON DE BEAUTÉ — MAIN SCRIPTS
+   MAISON DE BEAUTÉ — MAIN CLIENT JAVASCRIPT
+   Pure HTML, CSS, JavaScript Architecture
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Highlight active nav link based on current page filename
+  const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-link').forEach(link => {
+    const href = link.getAttribute('href');
+    if (href === currentPath || (currentPath === '' && href === 'index.html') || (currentPath === 'index.html' && href === 'index.html')) {
+      link.classList.add('active');
+    } else if (href !== 'index.html' && currentPath.endsWith(href)) {
+      link.classList.add('active');
+    }
+  });
+
   // Mobile Navigation Toggle
   const navToggle = document.querySelector('.nav-toggle');
   const navMenu = document.querySelector('.nav-menu');
 
   if (navToggle && navMenu) {
-    navToggle.addEventListener('click', () => {
+    navToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
       navMenu.classList.toggle('active');
       const isOpen = navMenu.classList.contains('active');
       navToggle.innerHTML = isOpen ? '✕' : '☰';
+      navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
 
     // Close mobile nav when clicking a link
     document.querySelectorAll('.nav-link').forEach(link => {
       link.addEventListener('click', () => {
         navMenu.classList.remove('active');
-        if (navToggle) navToggle.innerHTML = '☰';
+        if (navToggle) {
+          navToggle.innerHTML = '☰';
+          navToggle.setAttribute('aria-expanded', 'false');
+        }
       });
     });
-  }
 
-  // Services Page Category Filtering
-  const serviceFilterBtns = document.querySelectorAll('.service-filter-btn');
-  const serviceCards = document.querySelectorAll('.service-card-item');
-
-  if (serviceFilterBtns.length && serviceCards.length) {
-    serviceFilterBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        serviceFilterBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        const cat = btn.getAttribute('data-category');
-
-        serviceCards.forEach(card => {
-          const cardCat = card.getAttribute('data-category');
-          if (cat === 'all' || cardCat === cat) {
-            card.style.display = 'flex';
-          } else {
-            card.style.display = 'none';
-          }
-        });
-      });
-    });
-  }
-
-  // Admin Dashboard Status Update Handlers
-  const statusSelectors = document.querySelectorAll('.admin-status-select');
-  statusSelectors.forEach(select => {
-    select.addEventListener('change', async () => {
-      const bookingId = select.getAttribute('data-id');
-      const newStatus = select.value;
-
-      try {
-        const res = await fetch('/api/admin/update-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ booking_id: bookingId, status: newStatus })
-        });
-        const data = await res.json();
-        if (data.success) {
-          if (window.showToast) window.showToast(`Booking #${bookingId} marked as ${newStatus}`, 'success');
-          // Update row badge class
-          const badge = document.getElementById(`status-badge-${bookingId}`);
-          if (badge) {
-            badge.className = `status-badge status-${newStatus}`;
-            badge.textContent = newStatus;
-          }
+    // Close mobile nav when clicking outside
+    document.addEventListener('click', (e) => {
+      if (navMenu.classList.contains('active')) {
+        if (!navMenu.contains(e.target) && !navToggle.contains(e.target)) {
+          navMenu.classList.remove('active');
+          navToggle.innerHTML = '☰';
+          navToggle.setAttribute('aria-expanded', 'false');
         }
-      } catch (e) {
-        alert('Failed to update status');
       }
     });
-  });
 
-  // Cancel Booking in Manage Portal
-  const cancelBtn = document.getElementById('cancelAppointmentBtn');
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', async () => {
-      const code = cancelBtn.getAttribute('data-code');
-      if (!confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/cancel-booking', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ booking_code: code })
-        });
-        const data = await res.json();
-        if (data.success) {
-          alert('Your appointment has been cancelled successfully.');
-          window.location.reload();
-        } else {
-          alert(data.message || 'Could not cancel booking.');
-        }
-      } catch (err) {
-        alert('Network error while cancelling.');
+    // Handle window resize from mobile to desktop
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 992 && navMenu.classList.contains('active')) {
+        navMenu.classList.remove('active');
+        navToggle.innerHTML = '☰';
+        navToggle.setAttribute('aria-expanded', 'false');
       }
     });
   }
@@ -196,3 +152,43 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(updateBallPhysics);
   }
 });
+
+// Global Toast Notification Helper
+window.showToast = function (message, type = 'info') {
+  let toast = document.getElementById('globalToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'globalToast';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '2rem';
+    toast.style.right = '2rem';
+    toast.style.zIndex = '9999';
+    toast.style.padding = '0.9rem 1.6rem';
+    toast.style.borderRadius = '30px';
+    toast.style.fontSize = '0.92rem';
+    toast.style.fontWeight = '600';
+    toast.style.boxShadow = '0 10px 30px rgba(0,0,0,0.25)';
+    toast.style.transition = 'all 0.3s ease';
+    document.body.appendChild(toast);
+  }
+
+  if (type === 'error') {
+    toast.style.background = '#C03737';
+    toast.style.color = '#FFFFFF';
+  } else if (type === 'success') {
+    toast.style.background = '#1B834E';
+    toast.style.color = '#FFFFFF';
+  } else {
+    toast.style.background = '#1C1E24';
+    toast.style.color = '#FFFFFF';
+  }
+
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateY(0)';
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+  }, 4000);
+};

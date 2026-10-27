@@ -1,5 +1,5 @@
 /* ==========================================================================
-   BEFORE & AFTER ARTISTRY — SIDE-BY-SIDE GALLERY & FILTERS
+   MAISON DE BEAUTÉ — BEFORE & AFTER TRANSFORMATION FILTERS
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
